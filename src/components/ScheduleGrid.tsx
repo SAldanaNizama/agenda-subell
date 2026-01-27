@@ -6,7 +6,11 @@ interface ScheduleGridProps {
   appointments: Appointment[];
   onSlotClick: (time: string) => void;
   onRemoveAppointment: (id: string) => void;
+  onConfirmPayment?: (id: string) => void;
   selectedOperator: Operator | null;
+  viewerOperatorId: number | null;
+  isAdmin?: boolean;
+  canDeleteAppointment?: (appointment: Appointment) => boolean;
 }
 
 export function ScheduleGrid({
@@ -14,7 +18,11 @@ export function ScheduleGrid({
   appointments,
   onSlotClick,
   onRemoveAppointment,
+  onConfirmPayment,
   selectedOperator,
+  viewerOperatorId,
+  isAdmin = false,
+  canDeleteAppointment,
 }: ScheduleGridProps) {
   const getAppointmentForSlot = (time: string) => {
     return appointments.find((apt) => apt.time === time);
@@ -32,16 +40,27 @@ export function ScheduleGrid({
       </div>
       
       <div className="schedule-grid max-h-[calc(100vh-320px)] overflow-y-auto">
-        {slots.map((slot) => (
-          <TimeSlotRow
-            key={slot.time}
-            slot={slot}
-            appointment={getAppointmentForSlot(slot.time)}
-            onSlotClick={onSlotClick}
-            onRemoveAppointment={onRemoveAppointment}
-            canEdit={!!selectedOperator}
-          />
-        ))}
+        {slots.map((slot) => {
+          const appointment = getAppointmentForSlot(slot.time);
+          const canDelete = appointment
+            ? canDeleteAppointment?.(appointment) ?? false
+            : false;
+          return (
+            <TimeSlotRow
+              key={slot.time}
+              slot={slot}
+              appointment={appointment}
+              onSlotClick={onSlotClick}
+              onRemoveAppointment={canDelete ? onRemoveAppointment : undefined}
+              onConfirmPayment={isAdmin ? onConfirmPayment : undefined}
+              canEdit={!!selectedOperator}
+              canViewSensitive={
+                isAdmin ||
+                (viewerOperatorId != null && appointment?.createdByOperatorId === viewerOperatorId)
+              }
+            />
+          );
+        })}
       </div>
     </div>
   );

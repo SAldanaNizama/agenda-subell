@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -12,10 +13,20 @@ import {
 import { Operator } from '@/types/appointment';
 import { UserPlus, Phone, User } from 'lucide-react';
 
+const serviceOptions = ['Ecografia', 'Detox/Duo'];
+const couponOptions = [5, 10, 15];
+
 interface AppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (patientName: string, patientPhone: string) => void;
+  onSubmit: (
+    patientName: string,
+    patientPhone: string,
+    city: string,
+    services: string[],
+    amountDue: number,
+    couponPercent: number | null,
+  ) => void;
   selectedTime: string;
   selectedDate: string;
   operator: Operator;
@@ -31,13 +42,36 @@ export function AppointmentForm({
 }: AppointmentFormProps) {
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
+  const [city, setCity] = useState('');
+  const [services, setServices] = useState<string[]>([]);
+  const [amountDue, setAmountDue] = useState('');
+  const [couponPercent, setCouponPercent] = useState<number | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (patientName.trim() && patientPhone.trim()) {
-      onSubmit(patientName.trim(), patientPhone.trim());
+    const normalizedAmount = Number(amountDue);
+    if (
+      patientName.trim() &&
+      patientPhone.trim() &&
+      city.trim() &&
+      services.length >= 1 &&
+      Number.isFinite(normalizedAmount) &&
+      normalizedAmount > 0
+    ) {
+      onSubmit(
+        patientName.trim(),
+        patientPhone.trim(),
+        city.trim(),
+        services,
+        normalizedAmount,
+        couponPercent,
+      );
       setPatientName('');
       setPatientPhone('');
+      setCity('');
+      setServices([]);
+      setAmountDue('');
+      setCouponPercent(null);
       onClose();
     }
   };
@@ -51,7 +85,7 @@ export function AppointmentForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <UserPlus className="h-5 w-5 text-primary" />
@@ -71,7 +105,7 @@ export function AppointmentForm({
           <div className="space-y-2">
             <Label htmlFor="patientName" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Nombre del Paciente
+              Nombre de la persona
             </Label>
             <Input
               id="patientName"
@@ -98,11 +132,106 @@ export function AppointmentForm({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="city">Ciudad</Label>
+            <Input
+              id="city"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Ej: Lima"
+              className="h-11"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Servicios (selecciona 1 o 2)</Label>
+            <div className="grid grid-cols-1 gap-2">
+              {serviceOptions.map((service) => {
+                const checked = services.includes(service);
+                const disableUnchecked = !checked && services.length >= 2;
+                return (
+                  <label
+                    key={service}
+                    className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(value) => {
+                        const isChecked = value === true;
+                        setServices((prev) => {
+                          if (isChecked) {
+                            if (prev.includes(service) || prev.length >= 2) return prev;
+                            return [...prev, service];
+                          }
+                          return prev.filter((item) => item !== service);
+                        });
+                      }}
+                      disabled={disableUnchecked}
+                    />
+                    <span className="text-sm">{service}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amountDue">Monto a pagar en caja</Label>
+            <Input
+              id="amountDue"
+              value={amountDue}
+              onChange={(e) => setAmountDue(e.target.value)}
+              placeholder="Ej: 120"
+              className="h-11"
+              inputMode="decimal"
+            />
+            <p className="text-xs text-muted-foreground">
+              Este monto solo lo registra quien agenda.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="coupon">Cupón (opcional)</Label>
+            <select
+              id="coupon"
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={couponPercent ?? ''}
+              onChange={(e) =>
+                setCouponPercent(e.target.value ? Number(e.target.value) : null)
+              }
+            >
+              <option value="">Sin cupón</option>
+              {couponOptions.map((percent) => (
+                <option key={percent} value={percent}>
+                  {percent}%
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Descuento disponible de 5% a 15%.
+            </p>
+            {amountDue.trim() && Number(amountDue) > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Monto final: {Math.max(0, Number(amountDue) * (1 - (couponPercent ?? 0) / 100)).toFixed(2)}
+              </p>
+            )}
+          </div>
+
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={!patientName.trim() || !patientPhone.trim()}>
+            <Button
+              type="submit"
+              disabled={
+                !patientName.trim() ||
+                !patientPhone.trim() ||
+                !city.trim() ||
+                services.length < 1 ||
+                !amountDue.trim() ||
+                !(Number(amountDue) > 0)
+              }
+            >
               Agendar Cita
             </Button>
           </DialogFooter>

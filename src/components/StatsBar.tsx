@@ -1,13 +1,13 @@
-import { Appointment } from '@/types/appointment';
-import { operators } from '@/hooks/useAppointments';
+import { Appointment, Operator } from '@/types/appointment';
 import { Users, Calendar, Clock } from 'lucide-react';
 
 interface StatsBarProps {
   appointments: Appointment[];
   totalSlots: number;
+  operators: Operator[];
 }
 
-export function StatsBar({ appointments, totalSlots }: StatsBarProps) {
+export function StatsBar({ appointments, totalSlots, operators }: StatsBarProps) {
   const occupiedSlots = appointments.length;
   const availableSlots = totalSlots - occupiedSlots;
   const occupancyRate = totalSlots > 0 ? Math.round((occupiedSlots / totalSlots) * 100) : 0;

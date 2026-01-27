@@ -1,5 +1,4 @@
-import { TimeSlot, Operator, Appointment } from '@/types/appointment';
-import { operators } from '@/hooks/useAppointments';
+import { TimeSlot, Appointment } from '@/types/appointment';
 import { cn } from '@/lib/utils';
 import { Phone, X } from 'lucide-react';
 
@@ -9,6 +8,8 @@ interface TimeSlotRowProps {
   onSlotClick: (time: string) => void;
   onRemoveAppointment?: (id: string) => void;
   canEdit: boolean;
+  canViewSensitive?: boolean;
+  onConfirmPayment?: (id: string) => void;
 }
 
 export function TimeSlotRow({
@@ -17,10 +18,10 @@ export function TimeSlotRow({
   onSlotClick,
   onRemoveAppointment,
   canEdit,
+  canViewSensitive = false,
+  onConfirmPayment,
 }: TimeSlotRowProps) {
-  const operator = appointment
-    ? operators.find((op) => op.id === appointment.operatorId)
-    : null;
+  const operatorClass = appointment?.operatorColorClass ?? '';
 
   return (
     <div className="flex border-b border-border last:border-b-0 group">
@@ -32,7 +33,7 @@ export function TimeSlotRow({
         className={cn(
           'flex-1 p-3 min-h-[60px] transition-all duration-200',
           appointment
-            ? cn('slot-occupied', operator?.colorClass)
+            ? cn('slot-occupied', operatorClass)
             : canEdit
             ? 'slot-available'
             : 'bg-emerald-50/50'
@@ -40,16 +41,51 @@ export function TimeSlotRow({
         onClick={() => !appointment && canEdit && onSlotClick(slot.time)}
       >
         {appointment ? (
-          <div className="flex items-center justify-between animate-fade-in">
-            <div className="flex-1">
+          <div className="flex items-center justify-between animate-fade-in gap-2">
+            <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm sm:text-base">{appointment.patientName}</p>
-              <p className="text-xs sm:text-sm flex items-center gap-1 opacity-80">
-                <Phone className="h-3 w-3" />
-                {appointment.patientPhone}
+              {canViewSensitive && (
+                <p className="text-xs sm:text-sm flex items-center gap-1 opacity-80">
+                  <Phone className="h-3 w-3" />
+                  {appointment.patientPhone}
+                </p>
+              )}
+              <p className="text-xs opacity-70 mt-1">
+                {appointment.city} · {appointment.services.join(' + ')}
               </p>
+              {canViewSensitive && (
+                <p className="text-xs opacity-70 mt-1">
+                  Monto en caja: {appointment.amountDue}
+                </p>
+              )}
+              {canViewSensitive && (
+                <p className="text-xs opacity-70 mt-1">
+                  {appointment.couponPercent
+                    ? `Cupón ${appointment.couponPercent}%`
+                    : 'Sin cupón'} · Final: {appointment.amountFinal.toFixed(2)}
+                </p>
+              )}
               <p className="text-xs opacity-70 mt-1">{appointment.operatorName}</p>
             </div>
-            {canEdit && onRemoveAppointment && (
+            <div className="flex items-center gap-2">
+              {appointment && onConfirmPayment && appointment.paymentStatus !== 'paid' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onConfirmPayment(appointment.id);
+                  }}
+                  className="px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 text-xs font-medium hover:bg-emerald-200 transition-colors"
+                  title="Confirmar pago"
+                >
+                  Confirmar pago
+                </button>
+              )}
+              {appointment && appointment.paymentStatus === 'paid' && (
+                <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium">
+                  Pagado
+                </span>
+              )}
+              {canEdit && onRemoveAppointment && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -60,7 +96,8 @@ export function TimeSlotRow({
               >
                 <X className="h-4 w-4 text-destructive" />
               </button>
-            )}
+              )}
+            </div>
           </div>
         ) : (
           canEdit && (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
 import { generateTimeSlots, formatDate } from '@/utils/timeSlots';
 import { OperatorSelector } from '@/components/OperatorSelector';
@@ -9,23 +9,58 @@ import { StatsBar } from '@/components/StatsBar';
 import { Operator } from '@/types/appointment';
 import { CalendarCheck, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
-const timeSlots = generateTimeSlots(8, 20);
+const timeSlots = generateTimeSlots(7, 21);
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const { currentUser, users, logout } = useAuth();
 
   const {
+    appointments,
+    loadAppointmentsForDate,
     addAppointment,
     removeAppointment,
-    getAppointmentsForDate,
+    confirmPayment,
   } = useAppointments();
 
   const dateString = formatDate(selectedDate);
-  const todayAppointments = getAppointmentsForDate(dateString);
+  const todayAppointments = appointments;
+  const isAdmin = currentUser?.role === 'admin';
+
+  const operators = useMemo<Operator[]>(
+    () =>
+      users
+        .filter((user) => user.role === 'user')
+        .map((user) => ({
+          id: user.id,
+          name: user.name,
+          colorClass: user.colorClass,
+        })),
+    [users],
+  );
+
+  useEffect(() => {
+    if (currentUser?.role === 'user') {
+      const operator = operators.find((op) => op.id === currentUser.id) ?? null;
+      setSelectedOperator(operator);
+    }
+  }, [currentUser, operators]);
+
+  useEffect(() => {
+    const load = async () => {
+      const result = await loadAppointmentsForDate(dateString);
+      if (!result.ok) {
+        toast.error(result.error ?? 'No se pudieron cargar las citas');
+      }
+    };
+    load();
+  }, [dateString, loadAppointmentsForDate]);
 
   const handleSlotClick = (time: string) => {
     if (!selectedOperator) {
@@ -36,25 +71,72 @@ const Index = () => {
     setIsFormOpen(true);
   };
 
-  const handleAppointmentSubmit = (patientName: string, patientPhone: string) => {
+  const handleAppointmentSubmit = async (
+    patientName: string,
+    patientPhone: string,
+    city: string,
+    services: string[],
+    amountDue: number,
+    couponPercent: number | null,
+  ) => {
     if (!selectedOperator || !selectedTime) return;
+    const appliedCoupon = couponPercent ?? 0;
+    const discount = amountDue * (appliedCoupon / 100);
+    const amountFinal = Math.max(0, amountDue - discount);
 
-    addAppointment({
+    const result = await addAppointment({
       patientName,
       patientPhone,
+      city,
+      services,
+      amountDue,
+      couponPercent: couponPercent ?? undefined,
+      amountFinal,
       date: dateString,
       time: selectedTime,
       operatorId: selectedOperator.id,
       operatorName: selectedOperator.name,
+      operatorColorClass: selectedOperator.colorClass,
+      createdByOperatorId: selectedOperator.id,
+      createdByOperatorName: selectedOperator.name,
+      paymentStatus: 'pending',
     });
 
+    if (!result.ok) {
+      toast.error(result.error ?? 'No se pudo agendar la cita');
+      return;
+    }
     toast.success(`Cita agendada para ${patientName}`);
     setSelectedTime(null);
   };
 
-  const handleRemoveAppointment = (id: string) => {
-    removeAppointment(id);
+  const canDeleteAppointment = (appointmentId: string) => {
+    const appointment = todayAppointments.find((apt) => apt.id === appointmentId);
+    if (!appointment || !currentUser) return false;
+    return appointment.createdByOperatorId === currentUser.id;
+  };
+
+  const handleRemoveAppointment = async (id: string) => {
+    if (!canDeleteAppointment(id)) {
+      toast.error('Solo el creador puede eliminar esta cita');
+      return;
+    }
+    const result = await removeAppointment(id);
+    if (!result.ok) {
+      toast.error(result.error ?? 'No se pudo eliminar la cita');
+      return;
+    }
     toast.info('Cita eliminada');
+  };
+
+  const handleConfirmPayment = async (id: string) => {
+    if (!currentUser) return;
+    const result = await confirmPayment(id, currentUser.name);
+    if (!result.ok) {
+      toast.error(result.error ?? 'No se pudo confirmar el pago');
+      return;
+    }
+    toast.success('Pago confirmado');
   };
 
   return (
@@ -62,7 +144,8 @@ const Index = () => {
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
             <div className="p-2 bg-primary rounded-lg">
               <Stethoscope className="h-6 w-6 text-primary-foreground" />
             </div>
@@ -74,6 +157,26 @@ const Index = () => {
                 Sistema de agendamiento - Lima
               </p>
             </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {currentUser && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className={`h-3 w-3 rounded-full ${currentUser.colorClass}`} />
+                  <span className="font-medium">{currentUser.name}</span>
+                </div>
+              )}
+              {isAdmin && (
+                <Link to="/admin" className="text-sm text-primary hover:underline">
+                  Panel admin
+                </Link>
+              )}
+              <button
+                onClick={logout}
+                className="text-sm text-destructive hover:underline"
+              >
+                Cerrar sesión
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -82,10 +185,13 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Operator & Date Selection */}
         <div className="bg-card rounded-xl border border-border p-4 sm:p-6 shadow-sm space-y-4">
-          <OperatorSelector
-            selectedOperator={selectedOperator}
-            onSelect={setSelectedOperator}
-          />
+          {isAdmin && (
+            <OperatorSelector
+              operators={operators}
+              selectedOperator={selectedOperator}
+              onSelect={setSelectedOperator}
+            />
+          )}
           
           <div className="border-t border-border pt-4">
             <DateSelector
@@ -99,6 +205,7 @@ const Index = () => {
         <StatsBar
           appointments={todayAppointments}
           totalSlots={timeSlots.length}
+          operators={operators}
         />
 
         {/* Schedule Grid */}
@@ -118,7 +225,13 @@ const Index = () => {
             appointments={todayAppointments}
             onSlotClick={handleSlotClick}
             onRemoveAppointment={handleRemoveAppointment}
+            onConfirmPayment={handleConfirmPayment}
             selectedOperator={selectedOperator}
+            viewerOperatorId={currentUser ? Number(currentUser.id) : null}
+            isAdmin={isAdmin}
+            canDeleteAppointment={(appointment) =>
+              currentUser ? appointment.createdByOperatorId === currentUser.id : false
+            }
           />
         </div>
       </main>

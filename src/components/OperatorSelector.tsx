@@ -1,13 +1,13 @@
-import { operators } from '@/hooks/useAppointments';
 import { Operator } from '@/types/appointment';
 import { cn } from '@/lib/utils';
 
 interface OperatorSelectorProps {
+  operators: Operator[];
   selectedOperator: Operator | null;
   onSelect: (operator: Operator) => void;
 }
 
-export function OperatorSelector({ selectedOperator, onSelect }: OperatorSelectorProps) {
+export function OperatorSelector({ operators, selectedOperator, onSelect }: OperatorSelectorProps) {
   return (
     <div className="flex flex-col gap-3">
       <label className="text-sm font-medium text-muted-foreground">
