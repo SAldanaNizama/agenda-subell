@@ -2,6 +2,7 @@ export interface Appointment {
   id: string;
   patientName: string;
   patientPhone: string;
+  patientAge?: number;
   city: string;
   services: string[];
   amountDue: number;

@@ -52,6 +52,9 @@ export function TimeSlotRow({
                   {appointment.patientPhone}
                 </p>
               )}
+              {appointment.patientAge && (
+                <p className="text-xs opacity-70 mt-1">Edad: {appointment.patientAge}</p>
+              )}
               <p className="text-xs opacity-70 mt-1">
                 {appointment.city} · {appointment.services.join(' + ')}
               </p>

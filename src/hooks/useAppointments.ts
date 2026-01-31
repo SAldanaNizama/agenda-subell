@@ -6,6 +6,7 @@ interface DbAppointment {
   id: string;
   patient_name: string;
   patient_phone: string;
+  patient_age: number | null;
   city: string;
   services: string[];
   amount_due: number;
@@ -43,6 +44,7 @@ const toAppointment = (row: DbAppointment): Appointment => ({
   id: row.id,
   patientName: row.patient_name,
   patientPhone: row.patient_phone,
+  patientAge: row.patient_age ?? undefined,
   city: row.city,
   services: row.services ?? [],
   amountDue: Number(row.amount_due),
@@ -170,6 +172,7 @@ export function useAppointments() {
       const payload = {
         patient_name: appointment.patientName,
         patient_phone: appointment.patientPhone,
+        patient_age: appointment.patientAge ?? null,
         city: appointment.city,
         services: appointment.services,
         amount_due: appointment.amountDue,

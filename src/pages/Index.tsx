@@ -98,6 +98,7 @@ const Index = () => {
   const handleAppointmentSubmit = async (
     patientName: string,
     patientPhone: string,
+    patientAge: number | null,
     city: string,
     services: string[],
     amountDue: number,
@@ -114,6 +115,7 @@ const Index = () => {
     const result = await addAppointment({
       patientName,
       patientPhone,
+      patientAge: patientAge ?? undefined,
       city,
       services,
       amountDue,

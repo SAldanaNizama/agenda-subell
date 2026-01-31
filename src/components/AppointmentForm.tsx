@@ -21,6 +21,7 @@ interface AppointmentFormProps {
   onSubmit: (
     patientName: string,
     patientPhone: string,
+    patientAge: number | null,
     city: string,
     services: string[],
     amountDue: number,
@@ -41,6 +42,7 @@ export function AppointmentForm({
 }: AppointmentFormProps) {
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
+  const [patientAge, setPatientAge] = useState('');
   const [city, setCity] = useState('');
   const [services, setServices] = useState<string[]>([]);
   const [amountDue, setAmountDue] = useState('');
@@ -49,12 +51,14 @@ export function AppointmentForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedAmount = Number(amountDue);
+    const normalizedAge = patientAge.trim() ? Number(patientAge) : null;
     const normalizedDiscount = discountAmount.trim() ? Number(discountAmount) : 0;
     if (
       patientName.trim() &&
       patientPhone.trim() &&
       city.trim() &&
       services.length >= 1 &&
+      (!normalizedAge || (Number.isFinite(normalizedAge) && normalizedAge > 0 && normalizedAge <= 120)) &&
       Number.isFinite(normalizedAmount) &&
       normalizedAmount > 0 &&
       Number.isFinite(normalizedDiscount) &&
@@ -64,6 +68,7 @@ export function AppointmentForm({
       onSubmit(
         patientName.trim(),
         patientPhone.trim(),
+        normalizedAge,
         city.trim(),
         services,
         normalizedAmount,
@@ -71,6 +76,7 @@ export function AppointmentForm({
       );
       setPatientName('');
       setPatientPhone('');
+      setPatientAge('');
       setCity('');
       setServices([]);
       setAmountDue('');
@@ -132,6 +138,18 @@ export function AppointmentForm({
               placeholder="Ej: 987 654 321"
               className="h-11"
               type="tel"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="patientAge">Edad</Label>
+            <Input
+              id="patientAge"
+              value={patientAge}
+              onChange={(e) => setPatientAge(e.target.value)}
+              placeholder="Ej: 35"
+              className="h-11"
+              inputMode="numeric"
             />
           </div>
 

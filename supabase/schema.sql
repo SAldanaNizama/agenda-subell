@@ -12,6 +12,7 @@ create table if not exists public.appointments (
   id uuid primary key default gen_random_uuid(),
   patient_name text not null,
   patient_phone text not null,
+  patient_age int null,
   city text not null,
   services text[] not null,
   amount_due numeric not null,
