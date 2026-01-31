@@ -17,6 +17,69 @@ export function generateTimeSlots(startHour: number = 8, endHour: number = 20): 
   return slots;
 }
 
+const toMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+const toTimeString = (totalMinutes: number) => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+const toDisplay = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  const displayHour = hours > 12 ? hours - 12 : hours;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  return `${displayHour}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+};
+
+export function generateTimeSlotsByRanges(
+  ranges: Array<{ start: string; end: string }>,
+  intervalMinutes: number,
+): TimeSlot[] {
+  const slots: TimeSlot[] = [];
+
+  ranges.forEach(({ start, end }) => {
+    let current = toMinutes(start);
+    const endMinutes = toMinutes(end);
+
+    while (current <= endMinutes) {
+      const time = toTimeString(current);
+      slots.push({ time, display: toDisplay(time) });
+      current += intervalMinutes;
+    }
+  });
+
+  return slots;
+}
+
+export function generateTimeSlotsWithBlocked(
+  availableRanges: Array<{ start: string; end: string }>,
+  blockedRanges: Array<{ start: string; end: string; label: string }>,
+  intervalMinutes: number,
+): TimeSlot[] {
+  const availableSlots = generateTimeSlotsByRanges(availableRanges, intervalMinutes);
+  const blockedSlots = blockedRanges.flatMap(({ start, end, label }) =>
+    generateTimeSlotsByRanges([{ start, end }], intervalMinutes).map((slot) => ({
+      ...slot,
+      isBlocked: true,
+      blockedLabel: label,
+    })),
+  );
+
+  const merged = [...availableSlots, ...blockedSlots].reduce<Record<string, TimeSlot>>(
+    (acc, slot) => {
+      acc[slot.time] = slot.isBlocked ? slot : acc[slot.time] ?? slot;
+      return acc;
+    },
+    {},
+  );
+
+  return Object.values(merged).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
+}
+
 export function formatDate(date: Date): string {
   return date.toISOString().split('T')[0];
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
-import { generateTimeSlots, formatDate } from '@/utils/timeSlots';
+import { generateTimeSlotsWithBlocked, formatDate } from '@/utils/timeSlots';
 import { OperatorSelector } from '@/components/OperatorSelector';
 import { DateSelector } from '@/components/DateSelector';
 import { ScheduleGrid } from '@/components/ScheduleGrid';
@@ -12,7 +12,14 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
-const timeSlots = generateTimeSlots(7, 21);
+const timeSlots = generateTimeSlotsWithBlocked(
+  [
+    { start: '07:30', end: '12:50' },
+    { start: '14:00', end: '18:00' },
+  ],
+  [{ start: '13:00', end: '13:50', label: 'Almuerzo' }],
+  10,
+);
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -23,15 +30,24 @@ const Index = () => {
 
   const {
     appointments,
+    dayClosures,
     loadAppointmentsForDate,
+    loadDayClosure,
     addAppointment,
     removeAppointment,
     confirmPayment,
   } = useAppointments();
 
   const dateString = formatDate(selectedDate);
+  const todayString = formatDate(new Date());
   const todayAppointments = appointments;
   const isAdmin = currentUser?.role === 'admin';
+  const isDayClosed = Boolean(dayClosures[dateString]) || dateString < todayString;
+  const visibleAppointments = isAdmin
+    ? todayAppointments
+    : todayAppointments.filter(
+        (appointment) => appointment.createdByOperatorId === currentUser?.id,
+      );
 
   const operators = useMemo<Operator[]>(
     () =>
@@ -62,7 +78,15 @@ const Index = () => {
     load();
   }, [dateString, loadAppointmentsForDate]);
 
+  useEffect(() => {
+    loadDayClosure(dateString);
+  }, [dateString, loadDayClosure]);
+
   const handleSlotClick = (time: string) => {
+    if (isDayClosed) {
+      toast.error('Este día está cerrado');
+      return;
+    }
     if (!selectedOperator) {
       toast.error('Primero selecciona tu operadora');
       return;
@@ -77,12 +101,15 @@ const Index = () => {
     city: string,
     services: string[],
     amountDue: number,
-    couponPercent: number | null,
+    discountAmount: number | null,
   ) => {
     if (!selectedOperator || !selectedTime) return;
-    const appliedCoupon = couponPercent ?? 0;
-    const discount = amountDue * (appliedCoupon / 100);
-    const amountFinal = Math.max(0, amountDue - discount);
+    if (isDayClosed) {
+      toast.error('Este día está cerrado');
+      return;
+    }
+    const appliedDiscount = discountAmount ?? 0;
+    const amountFinal = Math.max(0, amountDue - appliedDiscount);
 
     const result = await addAppointment({
       patientName,
@@ -90,7 +117,7 @@ const Index = () => {
       city,
       services,
       amountDue,
-      couponPercent: couponPercent ?? undefined,
+      discountAmount: discountAmount ?? undefined,
       amountFinal,
       date: dateString,
       time: selectedTime,
@@ -100,6 +127,7 @@ const Index = () => {
       createdByOperatorId: selectedOperator.id,
       createdByOperatorName: selectedOperator.name,
       paymentStatus: 'pending',
+      appointmentStatus: 'pending',
     });
 
     if (!result.ok) {
@@ -113,10 +141,15 @@ const Index = () => {
   const canDeleteAppointment = (appointmentId: string) => {
     const appointment = todayAppointments.find((apt) => apt.id === appointmentId);
     if (!appointment || !currentUser) return false;
+    if (isAdmin) return true;
     return appointment.createdByOperatorId === currentUser.id;
   };
 
   const handleRemoveAppointment = async (id: string) => {
+    if (isDayClosed) {
+      toast.error('Este día está cerrado');
+      return;
+    }
     if (!canDeleteAppointment(id)) {
       toast.error('Solo el creador puede eliminar esta cita');
       return;
@@ -203,7 +236,7 @@ const Index = () => {
 
         {/* Stats */}
         <StatsBar
-          appointments={todayAppointments}
+          appointments={visibleAppointments}
           totalSlots={timeSlots.length}
           operators={operators}
         />
@@ -222,7 +255,7 @@ const Index = () => {
           
           <ScheduleGrid
             slots={timeSlots}
-            appointments={todayAppointments}
+            appointments={visibleAppointments}
             onSlotClick={handleSlotClick}
             onRemoveAppointment={handleRemoveAppointment}
             onConfirmPayment={handleConfirmPayment}
@@ -230,7 +263,7 @@ const Index = () => {
             viewerOperatorId={currentUser ? Number(currentUser.id) : null}
             isAdmin={isAdmin}
             canDeleteAppointment={(appointment) =>
-              currentUser ? appointment.createdByOperatorId === currentUser.id : false
+              isAdmin ? true : currentUser ? appointment.createdByOperatorId === currentUser.id : false
             }
           />
         </div>

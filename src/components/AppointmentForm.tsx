@@ -14,7 +14,6 @@ import { Operator } from '@/types/appointment';
 import { UserPlus, Phone, User } from 'lucide-react';
 
 const serviceOptions = ['Ecografia', 'Detox/Duo'];
-const couponOptions = [5, 10, 15];
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -25,7 +24,7 @@ interface AppointmentFormProps {
     city: string,
     services: string[],
     amountDue: number,
-    couponPercent: number | null,
+    discountAmount: number | null,
   ) => void;
   selectedTime: string;
   selectedDate: string;
@@ -45,18 +44,22 @@ export function AppointmentForm({
   const [city, setCity] = useState('');
   const [services, setServices] = useState<string[]>([]);
   const [amountDue, setAmountDue] = useState('');
-  const [couponPercent, setCouponPercent] = useState<number | null>(null);
+  const [discountAmount, setDiscountAmount] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedAmount = Number(amountDue);
+    const normalizedDiscount = discountAmount.trim() ? Number(discountAmount) : 0;
     if (
       patientName.trim() &&
       patientPhone.trim() &&
       city.trim() &&
       services.length >= 1 &&
       Number.isFinite(normalizedAmount) &&
-      normalizedAmount > 0
+      normalizedAmount > 0 &&
+      Number.isFinite(normalizedDiscount) &&
+      normalizedDiscount >= 0 &&
+      normalizedDiscount <= normalizedAmount
     ) {
       onSubmit(
         patientName.trim(),
@@ -64,14 +67,14 @@ export function AppointmentForm({
         city.trim(),
         services,
         normalizedAmount,
-        couponPercent,
+        discountAmount.trim() ? normalizedDiscount : null,
       );
       setPatientName('');
       setPatientPhone('');
       setCity('');
       setServices([]);
       setAmountDue('');
-      setCouponPercent(null);
+      setDiscountAmount('');
       onClose();
     }
   };
@@ -191,28 +194,21 @@ export function AppointmentForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="coupon">Cupón (opcional)</Label>
-            <select
-              id="coupon"
-              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={couponPercent ?? ''}
-              onChange={(e) =>
-                setCouponPercent(e.target.value ? Number(e.target.value) : null)
-              }
-            >
-              <option value="">Sin cupón</option>
-              {couponOptions.map((percent) => (
-                <option key={percent} value={percent}>
-                  {percent}%
-                </option>
-              ))}
-            </select>
+            <Label htmlFor="discountAmount">Descuento (opcional)</Label>
+            <Input
+              id="discountAmount"
+              value={discountAmount}
+              onChange={(e) => setDiscountAmount(e.target.value)}
+              placeholder="Ej: 20"
+              className="h-11"
+              inputMode="decimal"
+            />
             <p className="text-xs text-muted-foreground">
-              Descuento disponible de 5% a 15%.
+              No puede superar el monto principal.
             </p>
             {amountDue.trim() && Number(amountDue) > 0 && (
               <p className="text-xs text-muted-foreground">
-                Monto final: {Math.max(0, Number(amountDue) * (1 - (couponPercent ?? 0) / 100)).toFixed(2)}
+                Monto final: {Math.max(0, Number(amountDue) - (Number(discountAmount) || 0)).toFixed(2)}
               </p>
             )}
           </div>
@@ -229,7 +225,9 @@ export function AppointmentForm({
                 !city.trim() ||
                 services.length < 1 ||
                 !amountDue.trim() ||
-                !(Number(amountDue) > 0)
+                !(Number(amountDue) > 0) ||
+                (discountAmount.trim() &&
+                  !(Number(discountAmount) >= 0 && Number(discountAmount) <= Number(amountDue)))
               }
             >
               Agendar Cita

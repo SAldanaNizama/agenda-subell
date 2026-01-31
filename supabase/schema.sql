@@ -15,7 +15,7 @@ create table if not exists public.appointments (
   city text not null,
   services text[] not null,
   amount_due numeric not null,
-  coupon_percent numeric null,
+  discount_amount numeric null,
   amount_final numeric not null,
   date text not null,
   time text not null,
@@ -27,5 +27,20 @@ create table if not exists public.appointments (
   payment_status text not null default 'pending',
   payment_confirmed_at timestamptz null,
   payment_confirmed_by text null,
+  appointment_status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.day_closures (
+  date text primary key,
+  closed_at timestamptz not null default now(),
+  closed_by text not null
+);
+
+create table if not exists public.expenses (
+  id uuid primary key default gen_random_uuid(),
+  date text not null,
+  description text not null,
+  amount numeric not null,
   created_at timestamptz not null default now()
 );

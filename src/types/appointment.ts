@@ -5,7 +5,7 @@ export interface Appointment {
   city: string;
   services: string[];
   amountDue: number;
-  couponPercent?: number;
+  discountAmount?: number;
   amountFinal: number;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
@@ -17,6 +17,7 @@ export interface Appointment {
   paymentStatus: 'pending' | 'paid';
   paymentConfirmedAt?: string;
   paymentConfirmedBy?: string;
+  appointmentStatus: 'pending' | 'attended' | 'absent' | 'refund' | 'rescheduled';
   createdAt: string;
 }
 
@@ -29,5 +30,7 @@ export interface Operator {
 export interface TimeSlot {
   time: string;
   display: string;
+  isBlocked?: boolean;
+  blockedLabel?: string;
   appointment?: Appointment;
 }

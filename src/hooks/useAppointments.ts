@@ -9,7 +9,7 @@ interface DbAppointment {
   city: string;
   services: string[];
   amount_due: number;
-  coupon_percent: number | null;
+  discount_amount: number | null;
   amount_final: number;
   date: string;
   time: string;
@@ -21,7 +21,22 @@ interface DbAppointment {
   payment_status: 'pending' | 'paid';
   payment_confirmed_at: string | null;
   payment_confirmed_by: string | null;
+  appointment_status: 'pending' | 'attended' | 'absent' | 'refund' | 'rescheduled';
   created_at: string;
+}
+
+interface DayClosure {
+  date: string;
+  closedAt: string;
+  closedBy: string;
+}
+
+interface Expense {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  createdAt: string;
 }
 
 const toAppointment = (row: DbAppointment): Appointment => ({
@@ -31,7 +46,7 @@ const toAppointment = (row: DbAppointment): Appointment => ({
   city: row.city,
   services: row.services ?? [],
   amountDue: Number(row.amount_due),
-  couponPercent: row.coupon_percent ?? undefined,
+  discountAmount: row.discount_amount ?? undefined,
   amountFinal: Number(row.amount_final),
   date: row.date,
   time: row.time,
@@ -43,11 +58,14 @@ const toAppointment = (row: DbAppointment): Appointment => ({
   paymentStatus: row.payment_status ?? 'pending',
   paymentConfirmedAt: row.payment_confirmed_at ?? undefined,
   paymentConfirmedBy: row.payment_confirmed_by ?? undefined,
+  appointmentStatus: row.appointment_status ?? 'pending',
   createdAt: row.created_at,
 });
 
 export function useAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [dayClosures, setDayClosures] = useState<Record<string, DayClosure>>({});
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const loadAppointmentsForDate = useCallback(async (date: string) => {
     const { data, error } = await supabase
@@ -63,6 +81,90 @@ export function useAppointments() {
     return { ok: true };
   }, []);
 
+  const loadDayClosure = useCallback(async (date: string) => {
+    const { data, error } = await supabase
+      .from('day_closures')
+      .select('*')
+      .eq('date', date)
+      .maybeSingle();
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    if (data) {
+      setDayClosures((prev) => ({
+        ...prev,
+        [date]: {
+          date,
+          closedAt: data.closed_at as string,
+          closedBy: data.closed_by as string,
+        },
+      }));
+    }
+    return { ok: true, closure: data ?? null };
+  }, []);
+
+  const closeDay = useCallback(async (date: string, closedBy: string) => {
+    const { data, error } = await supabase
+      .from('day_closures')
+      .insert({ date, closed_by: closedBy })
+      .select('*')
+      .single();
+    if (error || !data) {
+      return { ok: false, error: error?.message ?? 'No se pudo cerrar el día' };
+    }
+    setDayClosures((prev) => ({
+      ...prev,
+      [date]: {
+        date,
+        closedAt: data.closed_at as string,
+        closedBy: data.closed_by as string,
+      },
+    }));
+    return { ok: true };
+  }, []);
+
+  const loadExpensesForDate = useCallback(async (date: string) => {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('date', date)
+      .order('created_at', { ascending: false });
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    const mapped =
+      data?.map((row) => ({
+        id: row.id as string,
+        date: row.date as string,
+        description: row.description as string,
+        amount: Number(row.amount),
+        createdAt: row.created_at as string,
+      })) ?? [];
+    setExpenses(mapped);
+    return { ok: true };
+  }, []);
+
+  const addExpense = useCallback(async (date: string, description: string, amount: number) => {
+    const payload = { date, description, amount };
+    const { data, error } = await supabase
+      .from('expenses')
+      .insert(payload)
+      .select('*')
+      .single();
+    if (error || !data) {
+      return { ok: false, error: error?.message ?? 'No se pudo guardar el gasto' };
+    }
+    const mapped = {
+      id: data.id as string,
+      date: data.date as string,
+      description: data.description as string,
+      amount: Number(data.amount),
+      createdAt: data.created_at as string,
+    };
+    setExpenses((prev) => [mapped, ...prev]);
+    return { ok: true };
+  }, []);
+
   const addAppointment = useCallback(
     async (appointment: Omit<Appointment, 'id' | 'createdAt'>) => {
       const payload = {
@@ -71,7 +173,7 @@ export function useAppointments() {
         city: appointment.city,
         services: appointment.services,
         amount_due: appointment.amountDue,
-        coupon_percent: appointment.couponPercent ?? null,
+        discount_amount: appointment.discountAmount ?? null,
         amount_final: appointment.amountFinal,
         date: appointment.date,
         time: appointment.time,
@@ -83,6 +185,7 @@ export function useAppointments() {
         payment_status: appointment.paymentStatus ?? 'pending',
         payment_confirmed_at: appointment.paymentConfirmedAt ?? null,
         payment_confirmed_by: appointment.paymentConfirmedBy ?? null,
+        appointment_status: appointment.appointmentStatus ?? 'pending',
       };
 
       const { data, error } = await supabase
@@ -131,11 +234,58 @@ export function useAppointments() {
     [],
   );
 
+  const updateAppointmentStatus = useCallback(
+    async (
+      id: string,
+      status: 'attended' | 'absent' | 'refund' | 'rescheduled',
+      confirmedBy: string,
+    ) => {
+      const updatePayload: Record<string, string> = {
+        appointment_status: status,
+      };
+
+      if (status === 'attended') {
+        updatePayload.payment_status = 'paid';
+        updatePayload.payment_confirmed_at = new Date().toISOString();
+        updatePayload.payment_confirmed_by = confirmedBy;
+      }
+
+      if (status === 'refund') {
+        updatePayload.payment_status = 'pending';
+        updatePayload.payment_confirmed_at = null;
+        updatePayload.payment_confirmed_by = null;
+      }
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .update(updatePayload)
+        .eq('id', id)
+        .select('*')
+        .single();
+
+      if (error || !data) {
+        return { ok: false, error: error?.message ?? 'No se pudo actualizar' };
+      }
+
+      const mapped = toAppointment(data as DbAppointment);
+      setAppointments((prev) => prev.map((apt) => (apt.id === id ? mapped : apt)));
+      return { ok: true, appointment: mapped };
+    },
+    [],
+  );
+
   return {
     appointments,
+    dayClosures,
+    expenses,
     loadAppointmentsForDate,
+    loadDayClosure,
+    closeDay,
+    loadExpensesForDate,
+    addExpense,
     addAppointment,
     removeAppointment,
     confirmPayment,
+    updateAppointmentStatus,
   };
 }

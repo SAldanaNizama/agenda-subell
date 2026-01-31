@@ -34,11 +34,13 @@ export function TimeSlotRow({
           'flex-1 p-3 min-h-[60px] transition-all duration-200',
           appointment
             ? cn('slot-occupied', operatorClass)
+            : slot.isBlocked
+            ? 'bg-slate-100 text-slate-500'
             : canEdit
             ? 'slot-available'
             : 'bg-emerald-50/50'
         )}
-        onClick={() => !appointment && canEdit && onSlotClick(slot.time)}
+        onClick={() => !appointment && canEdit && !slot.isBlocked && onSlotClick(slot.time)}
       >
         {appointment ? (
           <div className="flex items-center justify-between animate-fade-in gap-2">
@@ -60,9 +62,9 @@ export function TimeSlotRow({
               )}
               {canViewSensitive && (
                 <p className="text-xs opacity-70 mt-1">
-                  {appointment.couponPercent
-                    ? `Cupón ${appointment.couponPercent}%`
-                    : 'Sin cupón'} · Final: {appointment.amountFinal.toFixed(2)}
+                  {appointment.discountAmount
+                    ? `Descuento ${appointment.discountAmount}`
+                    : 'Sin descuento'} · Final: {appointment.amountFinal.toFixed(2)}
                 </p>
               )}
               <p className="text-xs opacity-70 mt-1">{appointment.operatorName}</p>
@@ -100,10 +102,16 @@ export function TimeSlotRow({
             </div>
           </div>
         ) : (
-          canEdit && (
-            <span className="text-emerald-600 text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-              + Agendar aquí
+          slot.isBlocked ? (
+            <span className="text-xs font-medium">
+              {slot.blockedLabel ?? 'No disponible'}
             </span>
+          ) : (
+            canEdit && (
+              <span className="text-emerald-600 text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                + Agendar aquí
+              </span>
+            )
           )
         )}
       </div>
