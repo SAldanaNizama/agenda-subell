@@ -67,14 +67,13 @@ const Index = () => {
 
   useEffect(() => {
     const load = async () => {
-      const operatorId = isAdmin ? undefined : currentUser?.id;
-      const result = await loadAppointmentsForDate(dateString, operatorId);
+      const result = await loadAppointmentsForDate(dateString);
       if (!result.ok) {
         toast.error(result.error ?? 'No se pudieron cargar las citas');
       }
     };
     load();
-  }, [dateString, loadAppointmentsForDate, currentUser, isAdmin]);
+  }, [dateString, loadAppointmentsForDate]);
 
 
   useEffect(() => {
