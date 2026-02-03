@@ -69,19 +69,22 @@ export function useAppointments() {
   const [dayClosures, setDayClosures] = useState<Record<string, DayClosure>>({});
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
-  const loadAppointmentsForDate = useCallback(async (date: string) => {
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('*')
-      .eq('date', date)
-      .order('time', { ascending: true });
+  const loadAppointmentsForDate = useCallback(
+    async (date: string, operatorId?: number) => {
+      let query = supabase.from('appointments').select('*').eq('date', date);
+      if (operatorId != null) {
+        query = query.eq('operator_id', operatorId);
+      }
+      const { data, error } = await query.order('time', { ascending: true });
     if (error) {
       return { ok: false, error: error.message };
     }
     const mapped = (data as DbAppointment[]).map(toAppointment);
     setAppointments(mapped);
     return { ok: true };
-  }, []);
+    },
+    [],
+  );
 
   const loadDayClosure = useCallback(async (date: string) => {
     const { data, error } = await supabase

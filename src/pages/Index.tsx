@@ -38,16 +38,13 @@ const Index = () => {
     confirmPayment,
   } = useAppointments();
 
+
   const dateString = formatDate(selectedDate);
   const todayString = formatDate(new Date());
   const todayAppointments = appointments;
   const isAdmin = currentUser?.role === 'admin';
   const isDayClosed = Boolean(dayClosures[dateString]) || dateString < todayString;
-  const visibleAppointments = isAdmin
-    ? todayAppointments
-    : todayAppointments.filter(
-        (appointment) => appointment.createdByOperatorId === currentUser?.id,
-      );
+  const visibleAppointments = todayAppointments;
 
   const operators = useMemo<Operator[]>(
     () =>
@@ -70,13 +67,15 @@ const Index = () => {
 
   useEffect(() => {
     const load = async () => {
-      const result = await loadAppointmentsForDate(dateString);
+      const operatorId = isAdmin ? undefined : currentUser?.id;
+      const result = await loadAppointmentsForDate(dateString, operatorId);
       if (!result.ok) {
         toast.error(result.error ?? 'No se pudieron cargar las citas');
       }
     };
     load();
-  }, [dateString, loadAppointmentsForDate]);
+  }, [dateString, loadAppointmentsForDate, currentUser, isAdmin]);
+
 
   useEffect(() => {
     loadDayClosure(dateString);

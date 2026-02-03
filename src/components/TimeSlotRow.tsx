@@ -40,7 +40,9 @@ export function TimeSlotRow({
             ? 'slot-available'
             : 'bg-emerald-50/50'
         )}
-        onClick={() => !appointment && canEdit && !slot.isBlocked && onSlotClick(slot.time)}
+        onClick={() =>
+          !appointment && canEdit && !slot.isBlocked && onSlotClick(slot.time)
+        }
       >
         {appointment ? (
           <div className="flex items-center justify-between animate-fade-in gap-2">
