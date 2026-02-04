@@ -4,12 +4,26 @@ import { supabase } from '@/lib/supabaseClient';
 
 const SESSION_KEY = 'pfo_session';
 
-const DEFAULT_ADMIN = {
-  email: 'admin@subell.com',
-  password: 'subel123',
-  name: 'Administrador',
-  colorClass: 'operator-1',
-} as const;
+const DEFAULT_ADMINS = [
+  {
+    email: 'admin@subell.com',
+    password: 'subel123',
+    name: 'Administrador',
+    colorClass: 'operator-1',
+  },
+  {
+    email: 'admin@ecoclinicperu.com',
+    password: 'elardValle123',
+    name: 'Elard Valle',
+    colorClass: 'operator-2',
+  },
+  {
+    email: 'admin@ecoclinic.com',
+    password: 'jaimeQuispe1234',
+    name: 'Jaime Quispe',
+    colorClass: 'operator-3',
+  },
+] as const;
 
 interface CreateUserInput {
   name: string;
@@ -40,21 +54,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const boot = async () => {
-      const { data: existingAdmin } = await supabase
+      const { data: existingAdmins } = await supabase
         .from('users')
-        .select('*')
-        .eq('email', DEFAULT_ADMIN.email)
-        .maybeSingle();
+        .select('email')
+        .in('email', DEFAULT_ADMINS.map((admin) => admin.email));
 
-      if (!existingAdmin) {
-        await supabase.from('users').insert({
-          id: generateId(),
-          name: DEFAULT_ADMIN.name,
-          email: DEFAULT_ADMIN.email,
-          password: DEFAULT_ADMIN.password,
-          role: 'admin',
-          color_class: DEFAULT_ADMIN.colorClass,
-        });
+      const existingEmails = new Set(
+        (existingAdmins ?? []).map((admin) => (admin.email as string).toLowerCase()),
+      );
+
+      const missingAdmins = DEFAULT_ADMINS.filter(
+        (admin) => !existingEmails.has(admin.email.toLowerCase()),
+      );
+
+      if (missingAdmins.length > 0) {
+        await supabase.from('users').insert(
+          missingAdmins.map((admin) => ({
+            id: generateId(),
+            name: admin.name,
+            email: admin.email,
+            password: admin.password,
+            role: 'admin',
+            color_class: admin.colorClass,
+          })),
+        );
       }
 
       const { data: allUsers } = await supabase.from('users').select('*').order('created_at', {
