@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +30,7 @@ interface AppointmentFormProps {
   selectedTime: string;
   selectedDate: string;
   operator: Operator;
+  scheduleType: 'agenda' | 'terapias';
 }
 
 export function AppointmentForm({
@@ -39,6 +40,7 @@ export function AppointmentForm({
   selectedTime,
   selectedDate,
   operator,
+  scheduleType,
 }: AppointmentFormProps) {
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
@@ -47,6 +49,12 @@ export function AppointmentForm({
   const [services, setServices] = useState<string[]>([]);
   const [amountDue, setAmountDue] = useState('');
   const [discountAmount, setDiscountAmount] = useState('');
+
+  useEffect(() => {
+    if (scheduleType === 'terapias') {
+      setServices(['Duos']);
+    }
+  }, [scheduleType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +78,7 @@ export function AppointmentForm({
         patientPhone.trim(),
         normalizedAge,
         city.trim(),
-        services,
+        scheduleType === 'terapias' ? ['Duos'] : services,
         normalizedAmount,
         discountAmount.trim() ? normalizedDiscount : null,
       );
@@ -165,35 +173,39 @@ export function AppointmentForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Servicios (selecciona 1 o 2)</Label>
-            <div className="grid grid-cols-1 gap-2">
-              {serviceOptions.map((service) => {
-                const checked = services.includes(service);
-                const disableUnchecked = !checked && services.length >= 2;
-                return (
-                  <label
-                    key={service}
-                    className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(value) => {
-                        const isChecked = value === true;
-                        setServices((prev) => {
-                          if (isChecked) {
-                            if (prev.includes(service) || prev.length >= 2) return prev;
-                            return [...prev, service];
-                          }
-                          return prev.filter((item) => item !== service);
-                        });
-                      }}
-                      disabled={disableUnchecked}
-                    />
-                    <span className="text-sm">{service}</span>
-                  </label>
-                );
-              })}
-            </div>
+            <Label>Servicios</Label>
+            {scheduleType === 'terapias' ? (
+              <div className="rounded-md border border-border p-2 text-sm">Duos</div>
+            ) : (
+              <div className="grid grid-cols-1 gap-2">
+                {serviceOptions.map((service) => {
+                  const checked = services.includes(service);
+                  const disableUnchecked = !checked && services.length >= 2;
+                  return (
+                    <label
+                      key={service}
+                      className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) => {
+                          const isChecked = value === true;
+                          setServices((prev) => {
+                            if (isChecked) {
+                              if (prev.includes(service) || prev.length >= 2) return prev;
+                              return [...prev, service];
+                            }
+                            return prev.filter((item) => item !== service);
+                          });
+                        }}
+                        disabled={disableUnchecked}
+                      />
+                      <span className="text-sm">{service}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -241,7 +253,7 @@ export function AppointmentForm({
                 !patientName.trim() ||
                 !patientPhone.trim() ||
                 !city.trim() ||
-                services.length < 1 ||
+                (scheduleType === 'terapias' ? false : services.length < 1) ||
                 !amountDue.trim() ||
                 !(Number(amountDue) > 0) ||
                 (discountAmount.trim() &&

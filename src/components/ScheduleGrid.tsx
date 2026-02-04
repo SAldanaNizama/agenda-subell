@@ -11,6 +11,7 @@ interface ScheduleGridProps {
   viewerOperatorId: number | null;
   isAdmin?: boolean;
   canDeleteAppointment?: (appointment: Appointment) => boolean;
+  capacity: number;
 }
 
 export function ScheduleGrid({
@@ -23,9 +24,10 @@ export function ScheduleGrid({
   viewerOperatorId,
   isAdmin = false,
   canDeleteAppointment,
+  capacity,
 }: ScheduleGridProps) {
   const getAppointmentForSlot = (time: string) => {
-    return appointments.find((apt) => apt.time === time);
+    return appointments.filter((apt) => apt.time === time);
   };
 
   return (
@@ -41,23 +43,24 @@ export function ScheduleGrid({
       
       <div className="schedule-grid max-h-[calc(100vh-320px)] overflow-y-auto">
         {slots.map((slot) => {
-          const appointment = getAppointmentForSlot(slot.time);
-          const canDelete = appointment
-            ? canDeleteAppointment?.(appointment) ?? false
-            : false;
+          const slotAppointments = getAppointmentForSlot(slot.time);
           return (
             <TimeSlotRow
               key={slot.time}
               slot={slot}
-              appointment={appointment}
+              appointments={slotAppointments}
               onSlotClick={onSlotClick}
-              onRemoveAppointment={canDelete ? onRemoveAppointment : undefined}
+              onRemoveAppointment={onRemoveAppointment}
               onConfirmPayment={isAdmin ? onConfirmPayment : undefined}
               canEdit={!!selectedOperator}
               canViewSensitive={
                 isAdmin ||
-                (viewerOperatorId != null && appointment?.createdByOperatorId === viewerOperatorId)
+                slotAppointments.some(
+                  (apt) => viewerOperatorId != null && apt.createdByOperatorId === viewerOperatorId,
+                )
               }
+              capacity={capacity}
+              canDeleteAppointment={canDeleteAppointment}
             />
           );
         })}

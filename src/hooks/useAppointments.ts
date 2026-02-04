@@ -12,6 +12,7 @@ interface DbAppointment {
   amount_due: number;
   discount_amount: number | null;
   amount_final: number;
+  schedule_type: 'agenda' | 'terapias';
   date: string;
   time: string;
   operator_id: number;
@@ -50,6 +51,7 @@ const toAppointment = (row: DbAppointment): Appointment => ({
   amountDue: Number(row.amount_due),
   discountAmount: row.discount_amount ?? undefined,
   amountFinal: Number(row.amount_final),
+  scheduleType: row.schedule_type ?? 'agenda',
   date: row.date,
   time: row.time,
   operatorId: row.operator_id,
@@ -181,6 +183,7 @@ export function useAppointments() {
         amount_due: appointment.amountDue,
         discount_amount: appointment.discountAmount ?? null,
         amount_final: appointment.amountFinal,
+        schedule_type: appointment.scheduleType ?? 'agenda',
         date: appointment.date,
         time: appointment.time,
         operator_id: appointment.operatorId,

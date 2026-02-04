@@ -8,6 +8,7 @@ export interface Appointment {
   amountDue: number;
   discountAmount?: number;
   amountFinal: number;
+  scheduleType: 'agenda' | 'terapias';
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   operatorId: number;

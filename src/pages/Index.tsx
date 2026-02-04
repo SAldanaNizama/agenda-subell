@@ -11,6 +11,7 @@ import { CalendarCheck, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const timeSlots = generateTimeSlotsWithBlocked(
   [
@@ -58,6 +59,22 @@ const Index = () => {
     [users],
   );
 
+  const [selectedSchedule, setSelectedSchedule] = useState<'agenda' | 'terapias'>('agenda');
+  const agendaSlots = timeSlots;
+  const therapySlots = generateTimeSlotsWithBlocked(
+    [
+      { start: '07:30', end: '12:30' },
+      { start: '14:00', end: '18:00' },
+    ],
+    [{ start: '13:00', end: '13:30', label: 'Almuerzo' }],
+    30,
+  );
+  const slots = selectedSchedule === 'agenda' ? agendaSlots : therapySlots;
+  const capacity = selectedSchedule === 'agenda' ? 1 : 2;
+  const appointmentsForSchedule = todayAppointments.filter(
+    (appointment) => appointment.scheduleType === selectedSchedule,
+  );
+
   useEffect(() => {
     if (currentUser?.role === 'user') {
       const operator = operators.find((op) => op.id === currentUser.id) ?? null;
@@ -87,6 +104,11 @@ const Index = () => {
     }
     if (!selectedOperator) {
       toast.error('Primero selecciona tu operadora');
+      return;
+    }
+    const count = appointmentsForSchedule.filter((apt) => apt.time === time).length;
+    if (count >= capacity) {
+      toast.error('Horario ocupado');
       return;
     }
     setSelectedTime(time);
@@ -119,6 +141,7 @@ const Index = () => {
       amountDue,
       discountAmount: discountAmount ?? undefined,
       amountFinal,
+      scheduleType: selectedSchedule,
       date: dateString,
       time: selectedTime,
       operatorId: selectedOperator.id,
@@ -252,10 +275,20 @@ const Index = () => {
               </span>
             )}
           </div>
+          <Tabs
+            value={selectedSchedule}
+            onValueChange={(value) => setSelectedSchedule(value as 'agenda' | 'terapias')}
+            className="mb-3"
+          >
+            <TabsList>
+              <TabsTrigger value="agenda">Agenda</TabsTrigger>
+              <TabsTrigger value="terapias">Terapias</TabsTrigger>
+            </TabsList>
+          </Tabs>
           
           <ScheduleGrid
-            slots={timeSlots}
-            appointments={visibleAppointments}
+            slots={slots}
+            appointments={appointmentsForSchedule}
             onSlotClick={handleSlotClick}
             onRemoveAppointment={handleRemoveAppointment}
             onConfirmPayment={handleConfirmPayment}
@@ -265,6 +298,7 @@ const Index = () => {
             canDeleteAppointment={(appointment) =>
               isAdmin ? true : currentUser ? appointment.createdByOperatorId === currentUser.id : false
             }
+            capacity={capacity}
           />
         </div>
       </main>
@@ -281,6 +315,7 @@ const Index = () => {
           selectedTime={selectedTime}
           selectedDate={dateString}
           operator={selectedOperator}
+          scheduleType={selectedSchedule}
         />
       )}
     </div>

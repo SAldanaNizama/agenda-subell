@@ -18,6 +18,7 @@ create table if not exists public.appointments (
   amount_due numeric not null,
   discount_amount numeric null,
   amount_final numeric not null,
+  schedule_type text not null default 'agenda',
   date text not null,
   time text not null,
   operator_id bigint not null,
