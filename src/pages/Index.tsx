@@ -281,7 +281,7 @@ const Index = () => {
             className="mb-3"
           >
             <TabsList>
-              <TabsTrigger value="agenda">Agenda</TabsTrigger>
+              <TabsTrigger value="agenda">Eco</TabsTrigger>
               <TabsTrigger value="terapias">Terapias</TabsTrigger>
             </TabsList>
           </Tabs>
