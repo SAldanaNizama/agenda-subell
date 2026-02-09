@@ -11,18 +11,6 @@ const DEFAULT_ADMINS = [
     name: 'Administrador',
     colorClass: 'operator-1',
   },
-  {
-    email: 'admin@ecoclinicperu.com',
-    password: 'elardValle123',
-    name: 'Elard Valle',
-    colorClass: 'operator-2',
-  },
-  {
-    email: 'admin@ecoclinic.com',
-    password: 'jaimeQuispe1234',
-    name: 'Jaime Quispe',
-    colorClass: 'operator-3',
-  },
 ] as const;
 
 interface CreateUserInput {

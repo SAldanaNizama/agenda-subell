@@ -25,6 +25,15 @@ export function TimeSlotRow({
   capacity,
   canDeleteAppointment,
 }: TimeSlotRowProps) {
+  const paymentLabel = (method: Appointment['paymentMethod']) => {
+    const labels: Record<Appointment['paymentMethod'], string> = {
+      yape: 'Yape',
+      plin: 'Plin',
+      tarjeta: 'Tarjeta',
+      transferencia: 'Transferencia',
+    };
+    return labels[method];
+  };
   const operatorClass = appointments[0]?.operatorColorClass ?? '';
   const isFull = appointments.length >= capacity;
 
@@ -79,6 +88,11 @@ export function TimeSlotRow({
                         {appointment.discountAmount
                           ? `Descuento ${appointment.discountAmount}`
                           : 'Sin descuento'} · Final: {appointment.amountFinal.toFixed(2)}
+                      </p>
+                    )}
+                    {canViewSensitive && (
+                      <p className="text-xs opacity-70 mt-1">
+                        Anticipo: {appointment.depositAmount.toFixed(2)} · Pago: {paymentLabel(appointment.paymentMethod)}
                       </p>
                     )}
                     <p className="text-xs opacity-70 mt-1">{appointment.operatorName}</p>

@@ -19,6 +19,13 @@ const colorOptions = [
   { value: 'operator-6', label: 'Turquesa' },
 ];
 
+const paymentLabels = {
+  yape: 'Yape',
+  plin: 'Plin',
+  tarjeta: 'Tarjeta',
+  transferencia: 'Transferencia',
+} as const;
+
 const Admin = () => {
   const { currentUser, users, createUser, deleteUser, logout } = useAuth();
   const [name, setName] = useState('');
@@ -352,6 +359,10 @@ const Admin = () => {
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)}
                             </p>
+                            <p className="text-xs text-muted-foreground">
+                              Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
+                              {paymentLabels[appointment.paymentMethod]}
+                            </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" disabled={isDayClosed} onClick={() => handleStatus(appointment.id, 'attended')}>
@@ -391,6 +402,10 @@ const Admin = () => {
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)}
                             </p>
+                            <p className="text-xs text-muted-foreground">
+                              Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
+                              {paymentLabels[appointment.paymentMethod]}
+                            </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="secondary" disabled={isDayClosed} onClick={() => handleStatus(appointment.id, 'refund')}>
@@ -420,6 +435,10 @@ const Admin = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
+                              {paymentLabels[appointment.paymentMethod]}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -466,6 +485,10 @@ const Admin = () => {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
+                            {paymentLabels[appointment.paymentMethod]}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Estado: {appointment.appointmentStatus}

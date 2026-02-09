@@ -11,7 +11,6 @@ import { CalendarCheck, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const timeSlots = generateTimeSlotsWithBlocked(
   [
@@ -59,21 +58,9 @@ const Index = () => {
     [users],
   );
 
-  const [selectedSchedule, setSelectedSchedule] = useState<'agenda' | 'terapias'>('agenda');
-  const agendaSlots = timeSlots;
-  const therapySlots = generateTimeSlotsWithBlocked(
-    [
-      { start: '07:30', end: '12:30' },
-      { start: '14:00', end: '18:00' },
-    ],
-    [{ start: '13:00', end: '13:30', label: 'Almuerzo' }],
-    30,
-  );
-  const slots = selectedSchedule === 'agenda' ? agendaSlots : therapySlots;
-  const capacity = selectedSchedule === 'agenda' ? 1 : 2;
-  const appointmentsForSchedule = todayAppointments.filter(
-    (appointment) => appointment.scheduleType === selectedSchedule,
-  );
+  const slots = timeSlots;
+  const capacity = 1;
+  const appointmentsForSchedule = todayAppointments;
 
   useEffect(() => {
     if (currentUser?.role === 'user') {
@@ -123,6 +110,8 @@ const Index = () => {
     services: string[],
     amountDue: number,
     discountAmount: number | null,
+    depositAmount: number,
+    paymentMethod: 'yape' | 'plin' | 'tarjeta' | 'transferencia',
   ) => {
     if (!selectedOperator || !selectedTime) return;
     if (isDayClosed) {
@@ -141,7 +130,9 @@ const Index = () => {
       amountDue,
       discountAmount: discountAmount ?? undefined,
       amountFinal,
-      scheduleType: selectedSchedule,
+      depositAmount,
+      paymentMethod,
+      scheduleType: 'agenda',
       date: dateString,
       time: selectedTime,
       operatorId: selectedOperator.id,
@@ -207,10 +198,10 @@ const Index = () => {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-                Agenda de Campaña
+                Agenda Subell
               </h1>
               <p className="text-sm text-muted-foreground">
-                Sistema de agendamiento - Lima
+                Centro de Estética
               </p>
             </div>
             </div>
@@ -275,17 +266,6 @@ const Index = () => {
               </span>
             )}
           </div>
-          <Tabs
-            value={selectedSchedule}
-            onValueChange={(value) => setSelectedSchedule(value as 'agenda' | 'terapias')}
-            className="mb-3"
-          >
-            <TabsList>
-              <TabsTrigger value="agenda">Eco</TabsTrigger>
-              <TabsTrigger value="terapias">Terapias</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
           <ScheduleGrid
             slots={slots}
             appointments={appointmentsForSchedule}
@@ -315,7 +295,6 @@ const Index = () => {
           selectedTime={selectedTime}
           selectedDate={dateString}
           operator={selectedOperator}
-          scheduleType={selectedSchedule}
         />
       )}
     </div>

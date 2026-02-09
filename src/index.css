@@ -6,44 +6,47 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 330 100% 98%;
+    --foreground: 330 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 330 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 330 25% 15%;
 
-    --primary: 199 89% 48%;
+    --primary: 330 74% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 330 30% 94%;
+    --secondary-foreground: 330 25% 15%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 330 25% 94%;
+    --muted-foreground: 330 10% 45%;
 
-    --accent: 168 76% 42%;
+    --accent: 330 85% 64%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 199 89% 48%;
+    --border: 330 25% 88%;
+    --input: 330 25% 88%;
+    --ring: 330 74% 55%;
 
     --radius: 0.75rem;
 
     /* Operator colors */
-    --operator-1: 199 89% 48%;
-    --operator-2: 168 76% 42%;
-    --operator-3: 280 65% 60%;
+    --operator-1: 330 74% 55%;
+    --operator-2: 340 70% 60%;
+    --operator-3: 320 65% 60%;
+    --operator-4: 350 75% 60%;
+    --operator-5: 310 70% 60%;
+    --operator-6: 300 65% 62%;
 
     /* Slot states */
-    --slot-available: 142 76% 36%;
-    --slot-occupied: 199 89% 48%;
+    --slot-available: 330 74% 55%;
+    --slot-occupied: 330 74% 55%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -56,33 +59,33 @@
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 330 28% 10%;
+    --foreground: 330 20% 96%;
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 330 28% 12%;
+    --card-foreground: 330 20% 96%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 330 28% 12%;
+    --popover-foreground: 330 20% 96%;
 
-    --primary: 199 89% 48%;
+    --primary: 330 74% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 330 28% 18%;
+    --secondary-foreground: 330 20% 96%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 330 28% 18%;
+    --muted-foreground: 330 15% 70%;
 
-    --accent: 168 76% 42%;
+    --accent: 330 85% 64%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 212 27% 84%;
+    --border: 330 28% 18%;
+    --input: 330 28% 18%;
+    --ring: 330 70% 70%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -108,7 +111,7 @@
 
 @layer components {
   .slot-available {
-    @apply bg-emerald-50 border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-all duration-200;
+    @apply bg-rose-50 border-rose-200 hover:bg-rose-100 cursor-pointer transition-all duration-200;
   }
 
   .slot-occupied {
@@ -116,31 +119,31 @@
   }
 
   .operator-1 {
-    @apply bg-sky-100 border-sky-300 text-sky-800;
-  }
-
-  .operator-2 {
-    @apply bg-emerald-100 border-emerald-300 text-emerald-800;
-  }
-
-  .operator-3 {
-    @apply bg-purple-100 border-purple-300 text-purple-800;
-  }
-
-  .operator-4 {
-    @apply bg-amber-100 border-amber-300 text-amber-800;
-  }
-
-  .operator-5 {
     @apply bg-rose-100 border-rose-300 text-rose-800;
   }
 
+  .operator-2 {
+    @apply bg-pink-100 border-pink-300 text-pink-800;
+  }
+
+  .operator-3 {
+    @apply bg-fuchsia-100 border-fuchsia-300 text-fuchsia-800;
+  }
+
+  .operator-4 {
+    @apply bg-rose-200 border-rose-300 text-rose-800;
+  }
+
+  .operator-5 {
+    @apply bg-pink-200 border-pink-300 text-pink-800;
+  }
+
   .operator-6 {
-    @apply bg-teal-100 border-teal-300 text-teal-800;
+    @apply bg-fuchsia-200 border-fuchsia-300 text-fuchsia-800;
   }
 
   .time-column {
-    @apply bg-slate-50 font-medium text-slate-600;
+    @apply bg-rose-50 font-medium text-rose-700;
   }
 
   .schedule-grid {

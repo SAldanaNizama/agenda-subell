@@ -8,7 +8,9 @@ export interface Appointment {
   amountDue: number;
   discountAmount?: number;
   amountFinal: number;
-  scheduleType: 'agenda' | 'terapias';
+  depositAmount: number;
+  paymentMethod: 'yape' | 'plin' | 'tarjeta' | 'transferencia';
+  scheduleType: 'agenda';
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   operatorId: number;

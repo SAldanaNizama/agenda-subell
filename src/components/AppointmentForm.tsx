@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +20,68 @@ import {
 import { Operator } from '@/types/appointment';
 import { UserPlus, Phone, User } from 'lucide-react';
 
-const serviceOptions = ['Ecografia', 'Detox/Duo'];
+const serviceOptions = [
+  'LIFTING DE PESTAÑAS',
+  'LIFTING + EFECTO RIMEL',
+  'CEJAS KERATIN',
+  'CEJITAS BROWS',
+  'MICROBLADING',
+  'MICROSHADING',
+  'SECUELAS MORPHEUS',
+  'MIRADAS MORPHEUS',
+  'MIRADAS CON HIFU',
+  'EXTENSIONES PELO A PELO',
+  'EXTENSIONES CON VOLUMEN',
+  'PACK MIRADAS MUÑECA NATURAL',
+  'PACK MIRADAS MUÑECA PRO',
+  'FACIAL PROFUNDO',
+  'FACIAL EXPRESS PROFESIONAL',
+  'HIDRAFACIAL',
+  'HIDRAPEELING',
+  'FACIAL DETOX',
+  'FACIAL ACNÉ',
+  'FACIAL MANCHAS',
+  'FACIAL ANTIENVEJECIMIENTO',
+  'RADIOLIF',
+  'HOLYWOOW PELL',
+  'LÁSER MANCHAS ROSTRO',
+  'LÁSER MANCHAS CUERPO',
+  'DERMAPEN',
+  'PLASMA ROSTRO',
+  'PLASMA 360',
+  'PLASMA CAPILAR',
+  'PAPADA ENZIMAS',
+  'PAPADA HIFU',
+  'PAPADA MORPHEUS',
+  'FIRMER MEJILLAS',
+  'MARCADO OVALO FACIAL',
+  'LIPO 360 SIN CIRUGÍA',
+  'REDUCE TECNICA MIXTA',
+  'CARBOX',
+  'ESTRÍAS PAQUETE',
+  'ESTRÍAS MORPHEUS',
+  'CELULITIS PAQUETE',
+  'ACLARADO DE ZONAS',
+  'PEELING QUÍMICO',
+  'PEELING DE ALGAS',
+  'ALTAFRECUENCIA ACNÉ',
+  'MADEROTETAPIA',
+  'MASAJE RELAJANTE',
+  'MASAJE DESCONTRACTURA',
+  'MADAJE REDUCTOR',
+  'REDUCTOR + REAFIRMANTE',
+  'GLÚTEOS UP',
+  'POMPAS DE GAROTA',
+];
+
+type PaymentMethod = 'yape' | 'plin' | 'tarjeta' | 'transferencia';
+
+const paymentMethods = [
+  { value: 'yape', label: 'Yape' },
+  { value: 'plin', label: 'Plin' },
+  { value: 'tarjeta', label: 'Tarjeta' },
+  { value: 'transferencia', label: 'Transferencia' },
+] as const;
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -26,11 +94,12 @@ interface AppointmentFormProps {
     services: string[],
     amountDue: number,
     discountAmount: number | null,
+    depositAmount: number,
+    paymentMethod: PaymentMethod,
   ) => void;
   selectedTime: string;
   selectedDate: string;
   operator: Operator;
-  scheduleType: 'agenda' | 'terapias';
 }
 
 export function AppointmentForm({
@@ -40,7 +109,6 @@ export function AppointmentForm({
   selectedTime,
   selectedDate,
   operator,
-  scheduleType,
 }: AppointmentFormProps) {
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
@@ -49,18 +117,16 @@ export function AppointmentForm({
   const [services, setServices] = useState<string[]>([]);
   const [amountDue, setAmountDue] = useState('');
   const [discountAmount, setDiscountAmount] = useState('');
-
-  useEffect(() => {
-    if (scheduleType === 'terapias') {
-      setServices(['Duos']);
-    }
-  }, [scheduleType]);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedAmount = Number(amountDue);
     const normalizedAge = patientAge.trim() ? Number(patientAge) : null;
     const normalizedDiscount = discountAmount.trim() ? Number(discountAmount) : 0;
+    const normalizedDeposit = Number(depositAmount);
+    const amountFinal = Math.max(0, normalizedAmount - normalizedDiscount);
     if (
       patientName.trim() &&
       patientPhone.trim() &&
@@ -71,16 +137,22 @@ export function AppointmentForm({
       normalizedAmount > 0 &&
       Number.isFinite(normalizedDiscount) &&
       normalizedDiscount >= 0 &&
-      normalizedDiscount <= normalizedAmount
+      normalizedDiscount <= normalizedAmount &&
+      Number.isFinite(normalizedDeposit) &&
+      normalizedDeposit > 0 &&
+      normalizedDeposit <= amountFinal &&
+      paymentMethod
     ) {
       onSubmit(
         patientName.trim(),
         patientPhone.trim(),
         normalizedAge,
         city.trim(),
-        scheduleType === 'terapias' ? ['Duos'] : services,
+        services,
         normalizedAmount,
         discountAmount.trim() ? normalizedDiscount : null,
+        normalizedDeposit,
+        paymentMethod,
       );
       setPatientName('');
       setPatientPhone('');
@@ -89,6 +161,8 @@ export function AppointmentForm({
       setServices([]);
       setAmountDue('');
       setDiscountAmount('');
+      setDepositAmount('');
+      setPaymentMethod('');
       onClose();
     }
   };
@@ -174,42 +248,32 @@ export function AppointmentForm({
 
           <div className="space-y-2">
             <Label>Servicios</Label>
-            {scheduleType === 'terapias' ? (
-              <div className="rounded-md border border-border p-2 text-sm">Duos</div>
-            ) : (
-              <div className="grid grid-cols-1 gap-2">
-                {serviceOptions.map((service) => {
-                  const checked = services.includes(service);
-                  const disableUnchecked = !checked && services.length >= 2;
-                  return (
-                    <label
-                      key={service}
-                      className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(value) => {
-                          const isChecked = value === true;
-                          setServices((prev) => {
-                            if (isChecked) {
-                              if (prev.includes(service) || prev.length >= 2) return prev;
-                              return [...prev, service];
-                            }
-                            return prev.filter((item) => item !== service);
-                          });
-                        }}
-                        disabled={disableUnchecked}
-                      />
-                      <span className="text-sm">{service}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1">
+              {serviceOptions.map((service) => {
+                const checked = services.includes(service);
+                return (
+                  <label
+                    key={service}
+                    className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(value) => {
+                        const isChecked = value === true;
+                        setServices((prev) =>
+                          isChecked ? [...new Set([...prev, service])] : prev.filter((item) => item !== service),
+                        );
+                      }}
+                    />
+                    <span className="text-sm">{service}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amountDue">Monto a pagar en caja</Label>
+            <Label htmlFor="amountDue">Precio final</Label>
             <Input
               id="amountDue"
               value={amountDue}
@@ -243,6 +307,37 @@ export function AppointmentForm({
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="depositAmount">Abonar ahora (anticipo)</Label>
+            <Input
+              id="depositAmount"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              placeholder="Ej: 30"
+              className="h-11"
+              inputMode="decimal"
+            />
+            <p className="text-xs text-muted-foreground">
+              Debe ser mayor a 0 y no superar el monto final.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Método de pago</Label>
+            <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Selecciona una opción" />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentMethods.map((method) => (
+                  <SelectItem key={method.value} value={method.value}>
+                    {method.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
@@ -253,11 +348,16 @@ export function AppointmentForm({
                 !patientName.trim() ||
                 !patientPhone.trim() ||
                 !city.trim() ||
-                (scheduleType === 'terapias' ? false : services.length < 1) ||
+                services.length < 1 ||
                 !amountDue.trim() ||
                 !(Number(amountDue) > 0) ||
                 (discountAmount.trim() &&
-                  !(Number(discountAmount) >= 0 && Number(discountAmount) <= Number(amountDue)))
+                  !(Number(discountAmount) >= 0 && Number(discountAmount) <= Number(amountDue))) ||
+                !depositAmount.trim() ||
+                !(Number(depositAmount) > 0) ||
+                Number(depositAmount) >
+                  Math.max(0, Number(amountDue) - (Number(discountAmount) || 0)) ||
+                !paymentMethod
               }
             >
               Agendar Cita
