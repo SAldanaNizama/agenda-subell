@@ -6,7 +6,8 @@ interface ScheduleGridProps {
   appointments: Appointment[];
   onSlotClick: (time: string) => void;
   onRemoveAppointment: (id: string) => void;
-  onConfirmPayment?: (id: string) => void;
+  onConfirmDeposit?: (id: string) => void;
+  onConfirmFullPayment?: (id: string) => void;
   selectedOperator: Operator | null;
   viewerOperatorId: number | null;
   isAdmin?: boolean;
@@ -19,7 +20,8 @@ export function ScheduleGrid({
   appointments,
   onSlotClick,
   onRemoveAppointment,
-  onConfirmPayment,
+  onConfirmDeposit,
+  onConfirmFullPayment,
   selectedOperator,
   viewerOperatorId,
   isAdmin = false,
@@ -51,7 +53,8 @@ export function ScheduleGrid({
               appointments={slotAppointments}
               onSlotClick={onSlotClick}
               onRemoveAppointment={onRemoveAppointment}
-              onConfirmPayment={isAdmin ? onConfirmPayment : undefined}
+              onConfirmDeposit={isAdmin ? onConfirmDeposit : undefined}
+              onConfirmFullPayment={isAdmin ? onConfirmFullPayment : undefined}
               canEdit={!!selectedOperator}
               canViewSensitive={
                 isAdmin ||

@@ -12,11 +12,11 @@ import { formatDate } from '@/utils/timeSlots';
 
 const colorOptions = [
   { value: 'operator-1', label: 'Azul' },
-  { value: 'operator-2', label: 'Verde' },
-  { value: 'operator-3', label: 'Morado' },
-  { value: 'operator-4', label: 'Naranja' },
-  { value: 'operator-5', label: 'Rojo' },
-  { value: 'operator-6', label: 'Turquesa' },
+  { value: 'operator-2', label: 'Rojo' },
+  { value: 'operator-3', label: 'Amarillo' },
+  { value: 'operator-4', label: 'Verde' },
+  { value: 'operator-5', label: 'Naranja' },
+  { value: 'operator-6', label: 'Morado' },
 ];
 
 const paymentLabels = {
@@ -46,6 +46,8 @@ const Admin = () => {
     closeDay,
     loadExpensesForDate,
     addExpense,
+    confirmDeposit,
+    confirmFullPayment,
     updateAppointmentStatus,
   } = useAppointments();
 
@@ -70,10 +72,9 @@ const Admin = () => {
     (appointment) => appointment.appointmentStatus === 'rescheduled',
   );
 
-  const totalRecaudado = attendedAppointments.reduce(
-    (sum, appointment) => sum + appointment.amountFinal,
-    0,
-  );
+  const totalRecaudado = todayAppointments.reduce((sum, appointment) => {
+    return sum + appointment.amountPaid;
+  }, 0);
   const totalGastos = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const neto = totalRecaudado - totalGastos;
 
@@ -140,6 +141,34 @@ const Admin = () => {
       return;
     }
     toast.success('Estado actualizado');
+  };
+
+  const handleConfirmDeposit = async (appointmentId: string) => {
+    if (!currentUser) return;
+    if (isDayClosed) {
+      toast.error('El día está cerrado');
+      return;
+    }
+    const result = await confirmDeposit(appointmentId, currentUser.name);
+    if (!result.ok) {
+      toast.error(result.error ?? 'No se pudo confirmar el abono');
+      return;
+    }
+    toast.success('Abono confirmado');
+  };
+
+  const handleConfirmFullPayment = async (appointmentId: string) => {
+    if (!currentUser) return;
+    if (isDayClosed) {
+      toast.error('El día está cerrado');
+      return;
+    }
+    const result = await confirmFullPayment(appointmentId, currentUser.name);
+    if (!result.ok) {
+      toast.error(result.error ?? 'No se pudo confirmar el pago');
+      return;
+    }
+    toast.success('Pago completo confirmado');
   };
 
   const handleCloseDay = async () => {
@@ -357,7 +386,8 @@ const Admin = () => {
                               {appointment.city} · {appointment.services.join(' + ')}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)}
+                              Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
+                              {appointment.amountPaid.toFixed(2)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
@@ -365,6 +395,21 @@ const Admin = () => {
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={isDayClosed || appointment.paymentStatus !== 'pending'}
+                              onClick={() => handleConfirmDeposit(appointment.id)}
+                            >
+                              Confirmar abono
+                            </Button>
+                            <Button
+                              size="sm"
+                              disabled={isDayClosed || appointment.paymentStatus === 'paid'}
+                              onClick={() => handleConfirmFullPayment(appointment.id)}
+                            >
+                              Pago completo
+                            </Button>
                             <Button size="sm" disabled={isDayClosed} onClick={() => handleStatus(appointment.id, 'attended')}>
                               Asistió
                             </Button>
@@ -400,7 +445,8 @@ const Admin = () => {
                               {appointment.city} · {appointment.services.join(' + ')}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)}
+                              Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
+                              {appointment.amountPaid.toFixed(2)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
@@ -434,7 +480,8 @@ const Admin = () => {
                               {appointment.city} · {appointment.services.join(' + ')}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)}
+                              Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
+                              {appointment.amountPaid.toFixed(2)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
@@ -484,7 +531,8 @@ const Admin = () => {
                             {appointment.city} · {appointment.services.join(' + ')}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)}
+                            Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
+                            {appointment.amountPaid.toFixed(2)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}

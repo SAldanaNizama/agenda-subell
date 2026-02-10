@@ -11,14 +11,15 @@ import { CalendarCheck, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const timeSlots = generateTimeSlotsWithBlocked(
   [
-    { start: '07:30', end: '12:50' },
+    { start: '08:00', end: '12:50' },
     { start: '14:00', end: '18:00' },
   ],
   [{ start: '13:00', end: '13:50', label: 'Almuerzo' }],
-  10,
+  30,
 );
 
 const Index = () => {
@@ -26,6 +27,7 @@ const Index = () => {
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [showMyAppointments, setShowMyAppointments] = useState(false);
   const { currentUser, users, logout } = useAuth();
 
   const {
@@ -35,7 +37,8 @@ const Index = () => {
     loadDayClosure,
     addAppointment,
     removeAppointment,
-    confirmPayment,
+    confirmDeposit,
+    confirmFullPayment,
   } = useAppointments();
 
 
@@ -44,7 +47,10 @@ const Index = () => {
   const todayAppointments = appointments;
   const isAdmin = currentUser?.role === 'admin';
   const isDayClosed = Boolean(dayClosures[dateString]) || dateString < todayString;
-  const visibleAppointments = todayAppointments;
+  const visibleAppointments =
+    showMyAppointments && currentUser
+      ? todayAppointments.filter((appointment) => appointment.createdByOperatorId === currentUser.id)
+      : todayAppointments;
 
   const operators = useMemo<Operator[]>(
     () =>
@@ -59,8 +65,8 @@ const Index = () => {
   );
 
   const slots = timeSlots;
-  const capacity = 1;
-  const appointmentsForSchedule = todayAppointments;
+  const capacity = 2;
+  const appointmentsForSchedule = visibleAppointments;
 
   useEffect(() => {
     if (currentUser?.role === 'user') {
@@ -132,6 +138,8 @@ const Index = () => {
       amountFinal,
       depositAmount,
       paymentMethod,
+      amountPaid: 0,
+      paymentStatus: 'pending',
       scheduleType: 'agenda',
       date: dateString,
       time: selectedTime,
@@ -140,7 +148,6 @@ const Index = () => {
       operatorColorClass: selectedOperator.colorClass,
       createdByOperatorId: selectedOperator.id,
       createdByOperatorName: selectedOperator.name,
-      paymentStatus: 'pending',
       appointmentStatus: 'pending',
     });
 
@@ -176,14 +183,24 @@ const Index = () => {
     toast.info('Cita eliminada');
   };
 
-  const handleConfirmPayment = async (id: string) => {
+  const handleConfirmDeposit = async (id: string) => {
     if (!currentUser) return;
-    const result = await confirmPayment(id, currentUser.name);
+    const result = await confirmDeposit(id, currentUser.name);
     if (!result.ok) {
       toast.error(result.error ?? 'No se pudo confirmar el pago');
       return;
     }
-    toast.success('Pago confirmado');
+    toast.success('Abono confirmado');
+  };
+
+  const handleConfirmFullPayment = async (id: string) => {
+    if (!currentUser) return;
+    const result = await confirmFullPayment(id, currentUser.name);
+    if (!result.ok) {
+      toast.error(result.error ?? 'No se pudo confirmar el pago');
+      return;
+    }
+    toast.success('Pago completo confirmado');
   };
 
   return (
@@ -257,13 +274,35 @@ const Index = () => {
 
         {/* Schedule Grid */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <CalendarCheck className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Horarios del Día</h2>
-            {!selectedOperator && (
-              <span className="text-sm text-muted-foreground ml-2">
-                (Selecciona una operadora para agendar)
-              </span>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <CalendarCheck className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">Horarios del Día</h2>
+              {!selectedOperator && (
+                <span className="text-sm text-muted-foreground ml-2">
+                  (Selecciona una operadora para agendar)
+                </span>
+              )}
+            </div>
+            {currentUser?.role === 'user' && (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={showMyAppointments ? 'outline' : 'secondary'}
+                  size="sm"
+                  onClick={() => setShowMyAppointments(false)}
+                >
+                  Todas
+                </Button>
+                <Button
+                  type="button"
+                  variant={showMyAppointments ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowMyAppointments(true)}
+                >
+                  Sus citas
+                </Button>
+              </div>
             )}
           </div>
           <ScheduleGrid
@@ -271,7 +310,8 @@ const Index = () => {
             appointments={appointmentsForSchedule}
             onSlotClick={handleSlotClick}
             onRemoveAppointment={handleRemoveAppointment}
-            onConfirmPayment={handleConfirmPayment}
+            onConfirmDeposit={handleConfirmDeposit}
+            onConfirmFullPayment={handleConfirmFullPayment}
             selectedOperator={selectedOperator}
             viewerOperatorId={currentUser ? Number(currentUser.id) : null}
             isAdmin={isAdmin}

@@ -113,7 +113,7 @@ export function AppointmentForm({
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
   const [patientAge, setPatientAge] = useState('');
-  const [city, setCity] = useState('');
+  const [city, setCity] = useState<'piura' | 'paita' | ''>('');
   const [services, setServices] = useState<string[]>([]);
   const [amountDue, setAmountDue] = useState('');
   const [discountAmount, setDiscountAmount] = useState('');
@@ -130,7 +130,7 @@ export function AppointmentForm({
     if (
       patientName.trim() &&
       patientPhone.trim() &&
-      city.trim() &&
+      city &&
       services.length >= 1 &&
       (!normalizedAge || (Number.isFinite(normalizedAge) && normalizedAge > 0 && normalizedAge <= 120)) &&
       Number.isFinite(normalizedAmount) &&
@@ -147,7 +147,7 @@ export function AppointmentForm({
         patientName.trim(),
         patientPhone.trim(),
         normalizedAge,
-        city.trim(),
+        city,
         services,
         normalizedAmount,
         discountAmount.trim() ? normalizedDiscount : null,
@@ -236,14 +236,16 @@ export function AppointmentForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="city">Ciudad</Label>
-            <Input
-              id="city"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Ej: Lima"
-              className="h-11"
-            />
+            <Label>Sucursal</Label>
+            <Select value={city} onValueChange={(value) => setCity(value as typeof city)}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Selecciona una sucursal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="piura">Piura</SelectItem>
+                <SelectItem value="paita">Paita</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -347,7 +349,7 @@ export function AppointmentForm({
               disabled={
                 !patientName.trim() ||
                 !patientPhone.trim() ||
-                !city.trim() ||
+                !city ||
                 services.length < 1 ||
                 !amountDue.trim() ||
                 !(Number(amountDue) > 0) ||

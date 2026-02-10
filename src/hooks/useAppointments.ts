@@ -14,6 +14,7 @@ interface DbAppointment {
   amount_final: number;
   deposit_amount: number | null;
   payment_method: 'yape' | 'plin' | 'tarjeta' | 'transferencia' | null;
+  amount_paid: number | null;
   schedule_type: 'agenda';
   date: string;
   time: string;
@@ -22,7 +23,7 @@ interface DbAppointment {
   operator_color_class: string;
   created_by_operator_id: number;
   created_by_operator_name: string;
-  payment_status: 'pending' | 'paid';
+  payment_status: 'pending' | 'deposit' | 'paid';
   payment_confirmed_at: string | null;
   payment_confirmed_by: string | null;
   appointment_status: 'pending' | 'attended' | 'absent' | 'refund' | 'rescheduled';
@@ -55,6 +56,7 @@ const toAppointment = (row: DbAppointment): Appointment => ({
   amountFinal: Number(row.amount_final),
   depositAmount: Number(row.deposit_amount ?? 0),
   paymentMethod: (row.payment_method ?? 'transferencia') as Appointment['paymentMethod'],
+  amountPaid: Number(row.amount_paid ?? 0),
   scheduleType: row.schedule_type ?? 'agenda',
   date: row.date,
   time: row.time,
@@ -189,6 +191,7 @@ export function useAppointments() {
         amount_final: appointment.amountFinal,
         deposit_amount: appointment.depositAmount,
         payment_method: appointment.paymentMethod,
+        amount_paid: appointment.amountPaid ?? 0,
         schedule_type: appointment.scheduleType ?? 'agenda',
         date: appointment.date,
         time: appointment.time,
@@ -227,12 +230,15 @@ export function useAppointments() {
     return { ok: true };
   }, []);
 
-  const confirmPayment = useCallback(
+  const confirmDeposit = useCallback(
     async (id: string, confirmedBy: string) => {
+      const target = appointments.find((apt) => apt.id === id);
+      if (!target) return { ok: false, error: 'Cita no encontrada' };
       const { data, error } = await supabase
         .from('appointments')
         .update({
-          payment_status: 'paid',
+          payment_status: 'deposit',
+          amount_paid: target.depositAmount,
           payment_confirmed_at: new Date().toISOString(),
           payment_confirmed_by: confirmedBy,
         })
@@ -246,7 +252,32 @@ export function useAppointments() {
       setAppointments((prev) => prev.map((apt) => (apt.id === id ? mapped : apt)));
       return { ok: true, appointment: mapped };
     },
-    [],
+    [appointments],
+  );
+
+  const confirmFullPayment = useCallback(
+    async (id: string, confirmedBy: string) => {
+      const target = appointments.find((apt) => apt.id === id);
+      if (!target) return { ok: false, error: 'Cita no encontrada' };
+      const { data, error } = await supabase
+        .from('appointments')
+        .update({
+          payment_status: 'paid',
+          amount_paid: target.amountFinal,
+          payment_confirmed_at: new Date().toISOString(),
+          payment_confirmed_by: confirmedBy,
+        })
+        .eq('id', id)
+        .select('*')
+        .single();
+      if (error || !data) {
+        return { ok: false, error: error?.message ?? 'No se pudo confirmar' };
+      }
+      const mapped = toAppointment(data as DbAppointment);
+      setAppointments((prev) => prev.map((apt) => (apt.id === id ? mapped : apt)));
+      return { ok: true, appointment: mapped };
+    },
+    [appointments],
   );
 
   const updateAppointmentStatus = useCallback(
@@ -255,6 +286,10 @@ export function useAppointments() {
       status: 'attended' | 'absent' | 'refund' | 'rescheduled',
       confirmedBy: string,
     ) => {
+      const appointment = appointments.find((apt) => apt.id === id);
+      if (!appointment) {
+        return { ok: false, error: 'Cita no encontrada' };
+      }
       const updatePayload: Record<string, string> = {
         appointment_status: status,
       };
@@ -263,12 +298,14 @@ export function useAppointments() {
         updatePayload.payment_status = 'paid';
         updatePayload.payment_confirmed_at = new Date().toISOString();
         updatePayload.payment_confirmed_by = confirmedBy;
+        updatePayload.amount_paid = String(appointment.amountFinal);
       }
 
       if (status === 'refund') {
         updatePayload.payment_status = 'pending';
         updatePayload.payment_confirmed_at = null;
         updatePayload.payment_confirmed_by = null;
+        updatePayload.amount_paid = '0';
       }
 
       const { data, error } = await supabase
@@ -286,7 +323,7 @@ export function useAppointments() {
       setAppointments((prev) => prev.map((apt) => (apt.id === id ? mapped : apt)));
       return { ok: true, appointment: mapped };
     },
-    [],
+    [appointments],
   );
 
   return {
@@ -300,7 +337,8 @@ export function useAppointments() {
     addExpense,
     addAppointment,
     removeAppointment,
-    confirmPayment,
+    confirmDeposit,
+    confirmFullPayment,
     updateAppointmentStatus,
   };
 }

@@ -10,6 +10,8 @@ export interface Appointment {
   amountFinal: number;
   depositAmount: number;
   paymentMethod: 'yape' | 'plin' | 'tarjeta' | 'transferencia';
+  amountPaid: number;
+  paymentStatus: 'pending' | 'deposit' | 'paid';
   scheduleType: 'agenda';
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
@@ -18,7 +20,6 @@ export interface Appointment {
   operatorColorClass: string;
   createdByOperatorId: number;
   createdByOperatorName: string;
-  paymentStatus: 'pending' | 'paid';
   paymentConfirmedAt?: string;
   paymentConfirmedBy?: string;
   appointmentStatus: 'pending' | 'attended' | 'absent' | 'refund' | 'rescheduled';

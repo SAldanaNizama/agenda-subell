@@ -9,7 +9,8 @@ interface TimeSlotRowProps {
   onRemoveAppointment?: (id: string) => void;
   canEdit: boolean;
   canViewSensitive?: boolean;
-  onConfirmPayment?: (id: string) => void;
+  onConfirmDeposit?: (id: string) => void;
+  onConfirmFullPayment?: (id: string) => void;
   capacity: number;
   canDeleteAppointment?: (appointment: Appointment) => boolean;
 }
@@ -21,7 +22,8 @@ export function TimeSlotRow({
   onRemoveAppointment,
   canEdit,
   canViewSensitive = false,
-  onConfirmPayment,
+  onConfirmDeposit,
+  onConfirmFullPayment,
   capacity,
   canDeleteAppointment,
 }: TimeSlotRowProps) {
@@ -95,20 +97,40 @@ export function TimeSlotRow({
                         Anticipo: {appointment.depositAmount.toFixed(2)} · Pago: {paymentLabel(appointment.paymentMethod)}
                       </p>
                     )}
+                    {canViewSensitive && (
+                      <p className="text-xs opacity-70 mt-1">Pagado: {appointment.amountPaid.toFixed(2)}</p>
+                    )}
                     <p className="text-xs opacity-70 mt-1">{appointment.operatorName}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {onConfirmPayment && appointment.paymentStatus !== 'paid' && (
+                    {onConfirmDeposit && appointment.paymentStatus === 'pending' && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onConfirmPayment(appointment.id);
+                          onConfirmDeposit(appointment.id);
+                        }}
+                        className="px-2 py-1 rounded-md bg-amber-100 text-amber-800 text-xs font-medium hover:bg-amber-200 transition-colors"
+                        title="Confirmar abono"
+                      >
+                        Confirmar abono
+                      </button>
+                    )}
+                    {onConfirmFullPayment && appointment.paymentStatus !== 'paid' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onConfirmFullPayment(appointment.id);
                         }}
                         className="px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 text-xs font-medium hover:bg-emerald-200 transition-colors"
-                        title="Confirmar pago"
+                        title="Pago completo"
                       >
-                        Confirmar pago
+                        Pago completo
                       </button>
+                    )}
+                    {appointment.paymentStatus === 'deposit' && (
+                      <span className="px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-medium">
+                        Abono confirmado
+                      </span>
                     )}
                     {appointment.paymentStatus === 'paid' && (
                       <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium">
