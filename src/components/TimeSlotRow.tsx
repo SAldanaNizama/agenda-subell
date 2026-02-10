@@ -36,6 +36,13 @@ export function TimeSlotRow({
     };
     return labels[method];
   };
+  const recipientLabel = (recipient: Appointment['depositRecipient']) => {
+    const labels: Record<Appointment['depositRecipient'], string> = {
+      'jair-chacon': 'Jair Chacon',
+      'sugei-aldana': 'Sugei Aldana',
+    };
+    return labels[recipient];
+  };
   const operatorClass = appointments[0]?.operatorColorClass ?? '';
   const isFull = appointments.length >= capacity;
 
@@ -95,6 +102,11 @@ export function TimeSlotRow({
                     {canViewSensitive && (
                       <p className="text-xs opacity-70 mt-1">
                         Anticipo: {appointment.depositAmount.toFixed(2)} · Pago: {paymentLabel(appointment.paymentMethod)}
+                      </p>
+                    )}
+                    {canViewSensitive && (
+                      <p className="text-xs opacity-70 mt-1">
+                        A nombre de: {recipientLabel(appointment.depositRecipient)}
                       </p>
                     )}
                     {canViewSensitive && (

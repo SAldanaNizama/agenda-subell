@@ -15,6 +15,7 @@ interface DbAppointment {
   deposit_amount: number | null;
   payment_method: 'yape' | 'plin' | 'tarjeta' | 'transferencia' | null;
   amount_paid: number | null;
+  deposit_recipient: 'jair-chacon' | 'sugei-aldana' | null;
   schedule_type: 'agenda';
   date: string;
   time: string;
@@ -56,6 +57,7 @@ const toAppointment = (row: DbAppointment): Appointment => ({
   amountFinal: Number(row.amount_final),
   depositAmount: Number(row.deposit_amount ?? 0),
   paymentMethod: (row.payment_method ?? 'transferencia') as Appointment['paymentMethod'],
+  depositRecipient: (row.deposit_recipient ?? 'jair-chacon') as Appointment['depositRecipient'],
   amountPaid: Number(row.amount_paid ?? 0),
   scheduleType: row.schedule_type ?? 'agenda',
   date: row.date,
@@ -192,6 +194,7 @@ export function useAppointments() {
         deposit_amount: appointment.depositAmount,
         payment_method: appointment.paymentMethod,
         amount_paid: appointment.amountPaid ?? 0,
+        deposit_recipient: appointment.depositRecipient,
         schedule_type: appointment.scheduleType ?? 'agenda',
         date: appointment.date,
         time: appointment.time,

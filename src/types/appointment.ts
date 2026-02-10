@@ -10,6 +10,7 @@ export interface Appointment {
   amountFinal: number;
   depositAmount: number;
   paymentMethod: 'yape' | 'plin' | 'tarjeta' | 'transferencia';
+  depositRecipient: 'jair-chacon' | 'sugei-aldana';
   amountPaid: number;
   paymentStatus: 'pending' | 'deposit' | 'paid';
   scheduleType: 'agenda';

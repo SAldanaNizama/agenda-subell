@@ -21,6 +21,7 @@ create table if not exists public.appointments (
   deposit_amount numeric not null default 0,
   payment_method text not null default 'transferencia',
   amount_paid numeric not null default 0,
+  deposit_recipient text not null default 'jair-chacon',
   schedule_type text not null default 'agenda',
   date text not null,
   time text not null,

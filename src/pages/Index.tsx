@@ -15,8 +15,8 @@ import { Button } from '@/components/ui/button';
 
 const timeSlots = generateTimeSlotsWithBlocked(
   [
-    { start: '08:00', end: '12:50' },
-    { start: '14:00', end: '18:00' },
+    { start: '08:30', end: '12:50' },
+    { start: '14:00', end: '19:30' },
   ],
   [{ start: '13:00', end: '13:50', label: 'Almuerzo' }],
   30,
@@ -118,6 +118,7 @@ const Index = () => {
     discountAmount: number | null,
     depositAmount: number,
     paymentMethod: 'yape' | 'plin' | 'tarjeta' | 'transferencia',
+    depositRecipient: 'jair-chacon' | 'sugei-aldana',
   ) => {
     if (!selectedOperator || !selectedTime) return;
     if (isDayClosed) {
@@ -138,6 +139,7 @@ const Index = () => {
       amountFinal,
       depositAmount,
       paymentMethod,
+      depositRecipient,
       amountPaid: 0,
       paymentStatus: 'pending',
       scheduleType: 'agenda',

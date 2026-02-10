@@ -26,6 +26,11 @@ const paymentLabels = {
   transferencia: 'Transferencia',
 } as const;
 
+const recipientLabels = {
+  'jair-chacon': 'Jair Chacon',
+  'sugei-aldana': 'Sugei Aldana',
+} as const;
+
 const Admin = () => {
   const { currentUser, users, createUser, deleteUser, logout } = useAuth();
   const [name, setName] = useState('');
@@ -391,7 +396,8 @@ const Admin = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
-                              {paymentLabels[appointment.paymentMethod]}
+                              {paymentLabels[appointment.paymentMethod]} · A nombre de:{' '}
+                              {recipientLabels[appointment.depositRecipient]}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -450,7 +456,8 @@ const Admin = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
-                              {paymentLabels[appointment.paymentMethod]}
+                              {paymentLabels[appointment.paymentMethod]} · A nombre de:{' '}
+                              {recipientLabels[appointment.depositRecipient]}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -485,7 +492,8 @@ const Admin = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
-                              {paymentLabels[appointment.paymentMethod]}
+                              {paymentLabels[appointment.paymentMethod]} · A nombre de:{' '}
+                              {recipientLabels[appointment.depositRecipient]}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -536,7 +544,8 @@ const Admin = () => {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
-                            {paymentLabels[appointment.paymentMethod]}
+                            {paymentLabels[appointment.paymentMethod]} · A nombre de:{' '}
+                            {recipientLabels[appointment.depositRecipient]}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Estado: {appointment.appointmentStatus}
