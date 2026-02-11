@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAppointments } from '@/hooks/useAppointments';
 import { formatDate } from '@/utils/timeSlots';
+import { FullPaymentDialog } from '@/components/FullPaymentDialog';
 
 const colorOptions = [
   { value: 'operator-1', label: 'Azul' },
@@ -19,17 +20,7 @@ const colorOptions = [
   { value: 'operator-6', label: 'Morado' },
 ];
 
-const paymentLabels = {
-  yape: 'Yape',
-  plin: 'Plin',
-  tarjeta: 'Tarjeta',
-  transferencia: 'Transferencia',
-} as const;
 
-const recipientLabels = {
-  'jair-chacon': 'Jair Chacon',
-  'sugei-aldana': 'Sugei Aldana',
-} as const;
 
 const Admin = () => {
   const { currentUser, users, createUser, deleteUser, logout } = useAuth();
@@ -41,15 +32,19 @@ const Admin = () => {
   const [historyDate, setHistoryDate] = useState(formatDate(new Date()));
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
+  const [fullPaymentTargetId, setFullPaymentTargetId] = useState<string | null>(null);
+  const [depositTargetId, setDepositTargetId] = useState<string | null>(null);
 
   const {
     appointments: todayAppointments,
     dayClosures: todayClosures,
     expenses,
+    incomes,
     loadAppointmentsForDate: loadTodayAppointments,
     loadDayClosure: loadTodayClosure,
     closeDay,
     loadExpensesForDate,
+    loadIncomesForDate,
     addExpense,
     confirmDeposit,
     confirmFullPayment,
@@ -77,9 +72,7 @@ const Admin = () => {
     (appointment) => appointment.appointmentStatus === 'rescheduled',
   );
 
-  const totalRecaudado = todayAppointments.reduce((sum, appointment) => {
-    return sum + appointment.amountPaid;
-  }, 0);
+  const totalRecaudado = incomes.reduce((sum, income) => sum + income.amount, 0);
   const totalGastos = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const neto = totalRecaudado - totalGastos;
 
@@ -93,7 +86,8 @@ const Admin = () => {
     load();
     loadTodayClosure(dateString);
     loadExpensesForDate(dateString);
-  }, [dateString, loadTodayAppointments, loadTodayClosure]);
+    loadIncomesForDate(dateString);
+  }, [dateString, loadTodayAppointments, loadTodayClosure, loadIncomesForDate]);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -148,13 +142,17 @@ const Admin = () => {
     toast.success('Estado actualizado');
   };
 
-  const handleConfirmDeposit = async (appointmentId: string) => {
+  const handleConfirmDeposit = async (
+    appointmentId: string,
+    method: 'yape' | 'plin' | 'tarjeta' | 'transferencia' | 'efectivo',
+    recipient: 'jair-chacon' | 'sugei-aldana',
+  ) => {
     if (!currentUser) return;
     if (isDayClosed) {
       toast.error('El día está cerrado');
       return;
     }
-    const result = await confirmDeposit(appointmentId, currentUser.name);
+    const result = await confirmDeposit(appointmentId, currentUser.name, method, recipient);
     if (!result.ok) {
       toast.error(result.error ?? 'No se pudo confirmar el abono');
       return;
@@ -162,13 +160,17 @@ const Admin = () => {
     toast.success('Abono confirmado');
   };
 
-  const handleConfirmFullPayment = async (appointmentId: string) => {
+  const handleConfirmFullPayment = async (
+    appointmentId: string,
+    method: 'yape' | 'plin' | 'tarjeta' | 'transferencia' | 'efectivo',
+    recipient: 'jair-chacon' | 'sugei-aldana',
+  ) => {
     if (!currentUser) return;
     if (isDayClosed) {
       toast.error('El día está cerrado');
       return;
     }
-    const result = await confirmFullPayment(appointmentId, currentUser.name);
+    const result = await confirmFullPayment(appointmentId, currentUser.name, method, recipient);
     if (!result.ok) {
       toast.error(result.error ?? 'No se pudo confirmar el pago');
       return;
@@ -392,12 +394,12 @@ const Admin = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
-                              {appointment.amountPaid.toFixed(2)}
+                              {appointment.amountPaid.toFixed(2)} · Faltante:{' '}
+                              {Math.max(0, appointment.amountFinal - appointment.amountPaid).toFixed(2)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
-                              {paymentLabels[appointment.paymentMethod]} · A nombre de:{' '}
-                              {recipientLabels[appointment.depositRecipient]}
+                              Anticipo: {appointment.depositAmount.toFixed(2)} · Método de abono:{' '}
+                              Yape
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -405,16 +407,16 @@ const Admin = () => {
                               size="sm"
                               variant="secondary"
                               disabled={isDayClosed || appointment.paymentStatus !== 'pending'}
-                              onClick={() => handleConfirmDeposit(appointment.id)}
+                              onClick={() => setDepositTargetId(appointment.id)}
                             >
                               Confirmar abono
                             </Button>
                             <Button
                               size="sm"
                               disabled={isDayClosed || appointment.paymentStatus === 'paid'}
-                              onClick={() => handleConfirmFullPayment(appointment.id)}
+                              onClick={() => setFullPaymentTargetId(appointment.id)}
                             >
-                              Pago completo
+                              Pagar restante
                             </Button>
                             <Button size="sm" disabled={isDayClosed} onClick={() => handleStatus(appointment.id, 'attended')}>
                               Asistió
@@ -452,12 +454,12 @@ const Admin = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
-                              {appointment.amountPaid.toFixed(2)}
+                              {appointment.amountPaid.toFixed(2)} · Faltante:{' '}
+                              {Math.max(0, appointment.amountFinal - appointment.amountPaid).toFixed(2)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
-                              {paymentLabels[appointment.paymentMethod]} · A nombre de:{' '}
-                              {recipientLabels[appointment.depositRecipient]}
+                              Anticipo: {appointment.depositAmount.toFixed(2)} · Método de abono:{' '}
+                              Yape
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -488,12 +490,12 @@ const Admin = () => {
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
-                              {appointment.amountPaid.toFixed(2)}
+                              {appointment.amountPaid.toFixed(2)} · Faltante:{' '}
+                              {Math.max(0, appointment.amountFinal - appointment.amountPaid).toFixed(2)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
-                              {paymentLabels[appointment.paymentMethod]} · A nombre de:{' '}
-                              {recipientLabels[appointment.depositRecipient]}
+                              Anticipo: {appointment.depositAmount.toFixed(2)} · Método de abono:{' '}
+                              Yape
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -540,12 +542,12 @@ const Admin = () => {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
-                            {appointment.amountPaid.toFixed(2)}
+                            {appointment.amountPaid.toFixed(2)} · Faltante:{' '}
+                            {Math.max(0, appointment.amountFinal - appointment.amountPaid).toFixed(2)}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Anticipo: {appointment.depositAmount.toFixed(2)} · Pago:{' '}
-                            {paymentLabels[appointment.paymentMethod]} · A nombre de:{' '}
-                            {recipientLabels[appointment.depositRecipient]}
+                            Anticipo: {appointment.depositAmount.toFixed(2)} · Método de abono:{' '}
+                            Yape
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Estado: {appointment.appointmentStatus}
@@ -605,6 +607,28 @@ const Admin = () => {
               </Card>
 
               <div className="space-y-3">
+                <h3 className="text-sm font-medium text-muted-foreground">Ingresos del día</h3>
+                {incomes.length === 0 && (
+                  <div className="text-sm text-muted-foreground">No hay ingresos registrados.</div>
+                )}
+                <div className="grid gap-2">
+                  {incomes.map((income) => (
+                    <Card key={income.id}>
+                      <CardContent className="p-3 flex items-center justify-between gap-4">
+                        <div className="text-sm">
+                          <div className="font-medium">{income.description}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {income.method} · {income.recipient}
+                          </div>
+                        </div>
+                        <div className="text-sm font-semibold">{income.amount.toFixed(2)}</div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground">Gastos del día</h3>
                 {expenses.length === 0 && (
                   <div className="text-sm text-muted-foreground">No hay gastos registrados.</div>
@@ -624,6 +648,44 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <FullPaymentDialog
+        isOpen={Boolean(fullPaymentTargetId)}
+        amount={
+          fullPaymentTargetId
+            ? Math.max(
+                0,
+                (todayAppointments.find((apt) => apt.id === fullPaymentTargetId)?.amountFinal ?? 0) -
+                  (todayAppointments.find((apt) => apt.id === fullPaymentTargetId)?.amountPaid ?? 0),
+              )
+            : 0
+        }
+        onClose={() => setFullPaymentTargetId(null)}
+        onConfirm={(method, recipient) => {
+          if (!fullPaymentTargetId) return;
+          handleConfirmFullPayment(fullPaymentTargetId, method, recipient);
+          setFullPaymentTargetId(null);
+        }}
+        title="Registrar pago restante"
+        confirmLabel="Confirmar pago"
+      />
+
+      <FullPaymentDialog
+        isOpen={Boolean(depositTargetId)}
+        amount={
+          depositTargetId
+            ? todayAppointments.find((apt) => apt.id === depositTargetId)?.depositAmount ?? 0
+            : 0
+        }
+        onClose={() => setDepositTargetId(null)}
+        onConfirm={(method, recipient) => {
+          if (!depositTargetId) return;
+          handleConfirmDeposit(depositTargetId, method, recipient);
+          setDepositTargetId(null);
+        }}
+        title="Registrar abono"
+        confirmLabel="Confirmar abono"
+      />
     </div>
   );
 };

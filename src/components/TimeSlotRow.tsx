@@ -27,22 +27,6 @@ export function TimeSlotRow({
   capacity,
   canDeleteAppointment,
 }: TimeSlotRowProps) {
-  const paymentLabel = (method: Appointment['paymentMethod']) => {
-    const labels: Record<Appointment['paymentMethod'], string> = {
-      yape: 'Yape',
-      plin: 'Plin',
-      tarjeta: 'Tarjeta',
-      transferencia: 'Transferencia',
-    };
-    return labels[method];
-  };
-  const recipientLabel = (recipient: Appointment['depositRecipient']) => {
-    const labels: Record<Appointment['depositRecipient'], string> = {
-      'jair-chacon': 'Jair Chacon',
-      'sugei-aldana': 'Sugei Aldana',
-    };
-    return labels[recipient];
-  };
   const operatorClass = appointments[0]?.operatorColorClass ?? '';
   const isFull = appointments.length >= capacity;
 
@@ -101,16 +85,16 @@ export function TimeSlotRow({
                     )}
                     {canViewSensitive && (
                       <p className="text-xs opacity-70 mt-1">
-                        Anticipo: {appointment.depositAmount.toFixed(2)} · Pago: {paymentLabel(appointment.paymentMethod)}
-                      </p>
-                    )}
-                    {canViewSensitive && (
-                      <p className="text-xs opacity-70 mt-1">
-                        A nombre de: {recipientLabel(appointment.depositRecipient)}
+                        Anticipo: {appointment.depositAmount.toFixed(2)}
                       </p>
                     )}
                     {canViewSensitive && (
                       <p className="text-xs opacity-70 mt-1">Pagado: {appointment.amountPaid.toFixed(2)}</p>
+                    )}
+                    {canViewSensitive && (
+                      <p className="text-xs opacity-70 mt-1">
+                        Faltante: {Math.max(0, appointment.amountFinal - appointment.amountPaid).toFixed(2)}
+                      </p>
                     )}
                     <p className="text-xs opacity-70 mt-1">{appointment.operatorName}</p>
                   </div>

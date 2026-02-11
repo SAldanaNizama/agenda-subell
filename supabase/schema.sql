@@ -50,3 +50,14 @@ create table if not exists public.expenses (
   amount numeric not null,
   created_at timestamptz not null default now()
 );
+
+create table if not exists public.incomes (
+  id uuid primary key default gen_random_uuid(),
+  date text not null,
+  description text not null,
+  amount numeric not null,
+  method text not null,
+  recipient text not null,
+  appointment_id uuid null,
+  created_at timestamptz not null default now()
+);

@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { FullPaymentDialog } from '@/components/FullPaymentDialog';
 
 const timeSlots = generateTimeSlotsWithBlocked(
   [
@@ -28,6 +29,8 @@ const Index = () => {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [showMyAppointments, setShowMyAppointments] = useState(false);
+  const [fullPaymentTargetId, setFullPaymentTargetId] = useState<string | null>(null);
+  const [depositTargetId, setDepositTargetId] = useState<string | null>(null);
   const { currentUser, users, logout } = useAuth();
 
   const {
@@ -117,8 +120,6 @@ const Index = () => {
     amountDue: number,
     discountAmount: number | null,
     depositAmount: number,
-    paymentMethod: 'yape' | 'plin' | 'tarjeta' | 'transferencia',
-    depositRecipient: 'jair-chacon' | 'sugei-aldana',
   ) => {
     if (!selectedOperator || !selectedTime) return;
     if (isDayClosed) {
@@ -138,8 +139,6 @@ const Index = () => {
       discountAmount: discountAmount ?? undefined,
       amountFinal,
       depositAmount,
-      paymentMethod,
-      depositRecipient,
       amountPaid: 0,
       paymentStatus: 'pending',
       scheduleType: 'agenda',
@@ -185,9 +184,13 @@ const Index = () => {
     toast.info('Cita eliminada');
   };
 
-  const handleConfirmDeposit = async (id: string) => {
+  const handleConfirmDeposit = async (
+    id: string,
+    method: 'yape' | 'plin' | 'tarjeta' | 'transferencia' | 'efectivo',
+    recipient: 'jair-chacon' | 'sugei-aldana',
+  ) => {
     if (!currentUser) return;
-    const result = await confirmDeposit(id, currentUser.name);
+    const result = await confirmDeposit(id, currentUser.name, method, recipient);
     if (!result.ok) {
       toast.error(result.error ?? 'No se pudo confirmar el pago');
       return;
@@ -195,9 +198,13 @@ const Index = () => {
     toast.success('Abono confirmado');
   };
 
-  const handleConfirmFullPayment = async (id: string) => {
+  const handleConfirmFullPayment = async (
+    id: string,
+    method: 'yape' | 'plin' | 'tarjeta' | 'transferencia' | 'efectivo',
+    recipient: 'jair-chacon' | 'sugei-aldana',
+  ) => {
     if (!currentUser) return;
-    const result = await confirmFullPayment(id, currentUser.name);
+    const result = await confirmFullPayment(id, currentUser.name, method, recipient);
     if (!result.ok) {
       toast.error(result.error ?? 'No se pudo confirmar el pago');
       return;
@@ -312,8 +319,8 @@ const Index = () => {
             appointments={appointmentsForSchedule}
             onSlotClick={handleSlotClick}
             onRemoveAppointment={handleRemoveAppointment}
-            onConfirmDeposit={handleConfirmDeposit}
-            onConfirmFullPayment={handleConfirmFullPayment}
+            onConfirmDeposit={(id) => setDepositTargetId(id)}
+            onConfirmFullPayment={(id) => setFullPaymentTargetId(id)}
             selectedOperator={selectedOperator}
             viewerOperatorId={currentUser ? Number(currentUser.id) : null}
             isAdmin={isAdmin}
@@ -339,6 +346,44 @@ const Index = () => {
           operator={selectedOperator}
         />
       )}
+
+      <FullPaymentDialog
+        isOpen={Boolean(fullPaymentTargetId)}
+        amount={
+          fullPaymentTargetId
+            ? Math.max(
+                0,
+                (appointments.find((apt) => apt.id === fullPaymentTargetId)?.amountFinal ?? 0) -
+                  (appointments.find((apt) => apt.id === fullPaymentTargetId)?.amountPaid ?? 0),
+              )
+            : 0
+        }
+        onClose={() => setFullPaymentTargetId(null)}
+        onConfirm={(method, recipient) => {
+          if (!fullPaymentTargetId) return;
+          handleConfirmFullPayment(fullPaymentTargetId, method, recipient);
+          setFullPaymentTargetId(null);
+        }}
+        title="Registrar pago restante"
+        confirmLabel="Confirmar pago"
+      />
+
+      <FullPaymentDialog
+        isOpen={Boolean(depositTargetId)}
+        amount={
+          depositTargetId
+            ? appointments.find((apt) => apt.id === depositTargetId)?.depositAmount ?? 0
+            : 0
+        }
+        onClose={() => setDepositTargetId(null)}
+        onConfirm={(method, recipient) => {
+          if (!depositTargetId) return;
+          handleConfirmDeposit(depositTargetId, method, recipient);
+          setDepositTargetId(null);
+        }}
+        title="Registrar abono"
+        confirmLabel="Confirmar abono"
+      />
     </div>
   );
 };

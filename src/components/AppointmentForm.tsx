@@ -74,20 +74,7 @@ const serviceOptions = [
   'POMPAS DE GAROTA',
 ];
 
-type PaymentMethod = 'yape' | 'plin' | 'tarjeta' | 'transferencia';
-type DepositRecipient = 'jair-chacon' | 'sugei-aldana';
 
-const paymentMethods = [
-  { value: 'yape', label: 'Yape' },
-  { value: 'plin', label: 'Plin' },
-  { value: 'tarjeta', label: 'Tarjeta' },
-  { value: 'transferencia', label: 'Transferencia' },
-] as const;
-
-const depositRecipients = [
-  { value: 'jair-chacon', label: 'Jair Chacon' },
-  { value: 'sugei-aldana', label: 'Sugei Aldana' },
-] as const;
 
 interface AppointmentFormProps {
   isOpen: boolean;
@@ -101,8 +88,6 @@ interface AppointmentFormProps {
     amountDue: number,
     discountAmount: number | null,
     depositAmount: number,
-    paymentMethod: PaymentMethod,
-    depositRecipient: DepositRecipient,
   ) => void;
   selectedTime: string;
   selectedDate: string;
@@ -125,8 +110,6 @@ export function AppointmentForm({
   const [amountDue, setAmountDue] = useState('');
   const [discountAmount, setDiscountAmount] = useState('');
   const [depositAmount, setDepositAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
-  const [depositRecipient, setDepositRecipient] = useState<DepositRecipient | ''>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,8 +132,6 @@ export function AppointmentForm({
       Number.isFinite(normalizedDeposit) &&
       normalizedDeposit > 0 &&
       normalizedDeposit <= amountFinal &&
-      paymentMethod &&
-      depositRecipient
     ) {
       onSubmit(
         patientName.trim(),
@@ -161,8 +142,6 @@ export function AppointmentForm({
         normalizedAmount,
         discountAmount.trim() ? normalizedDiscount : null,
         normalizedDeposit,
-        paymentMethod,
-        depositRecipient,
       );
       setPatientName('');
       setPatientPhone('');
@@ -172,8 +151,6 @@ export function AppointmentForm({
       setAmountDue('');
       setDiscountAmount('');
       setDepositAmount('');
-      setPaymentMethod('');
-      setDepositRecipient('');
       onClose();
     }
   };
@@ -333,47 +310,9 @@ export function AppointmentForm({
             <p className="text-xs text-muted-foreground">
               Debe ser mayor a 0 y no superar el monto final.
             </p>
-            <p className="text-xs text-muted-foreground">
-              Adelanto a nombre de Jair Chacon.
-            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Método de pago</Label>
-            <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Selecciona una opción" />
-              </SelectTrigger>
-              <SelectContent>
-                {paymentMethods.map((method) => (
-                  <SelectItem key={method.value} value={method.value}>
-                    {method.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
-          {paymentMethod && (
-            <div className="space-y-2">
-              <Label>¿A nombre de quién?</Label>
-              <Select
-                value={depositRecipient}
-                onValueChange={(value) => setDepositRecipient(value as DepositRecipient)}
-              >
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Selecciona un nombre" />
-                </SelectTrigger>
-                <SelectContent>
-                  {depositRecipients.map((recipient) => (
-                    <SelectItem key={recipient.value} value={recipient.value}>
-                      {recipient.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={onClose}>
@@ -393,9 +332,7 @@ export function AppointmentForm({
                 !depositAmount.trim() ||
                 !(Number(depositAmount) > 0) ||
                 Number(depositAmount) >
-                  Math.max(0, Number(amountDue) - (Number(discountAmount) || 0)) ||
-                !paymentMethod ||
-                !depositRecipient
+                  Math.max(0, Number(amountDue) - (Number(discountAmount) || 0))
               }
             >
               Agendar Cita
