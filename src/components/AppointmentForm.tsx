@@ -131,7 +131,7 @@ export function AppointmentForm({
       normalizedDiscount <= normalizedAmount &&
       Number.isFinite(normalizedDeposit) &&
       normalizedDeposit > 0 &&
-      normalizedDeposit <= amountFinal &&
+      normalizedDeposit <= amountFinal
     ) {
       onSubmit(
         patientName.trim(),
