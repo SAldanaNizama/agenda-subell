@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,6 +92,8 @@ interface AppointmentFormProps {
   selectedTime: string;
   selectedDate: string;
   operator: Operator;
+  /** Si la agenda está filtrada por sede, preselecciona esta sucursal en el formulario */
+  defaultLocation?: 'paita' | 'piura';
 }
 
 export function AppointmentForm({
@@ -101,6 +103,7 @@ export function AppointmentForm({
   selectedTime,
   selectedDate,
   operator,
+  defaultLocation,
 }: AppointmentFormProps) {
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
@@ -110,6 +113,12 @@ export function AppointmentForm({
   const [amountDue, setAmountDue] = useState('');
   const [discountAmount, setDiscountAmount] = useState('');
   const [depositAmount, setDepositAmount] = useState('');
+
+  useEffect(() => {
+    if (isOpen && defaultLocation) {
+      setCity(defaultLocation);
+    }
+  }, [isOpen, defaultLocation]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

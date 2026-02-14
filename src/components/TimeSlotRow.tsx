@@ -1,5 +1,6 @@
 import { TimeSlot, Appointment } from '@/types/appointment';
 import { cn } from '@/lib/utils';
+import { formatCityName } from '@/utils/display';
 import { Phone, X } from 'lucide-react';
 
 interface TimeSlotRowProps {
@@ -69,7 +70,7 @@ export function TimeSlotRow({
                       <p className="text-xs opacity-70 mt-1">Edad: {appointment.patientAge}</p>
                     )}
                     <p className="text-xs opacity-70 mt-1">
-                      {appointment.city} · {appointment.services.join(' + ')}
+                      {formatCityName(appointment.city)} · {appointment.services.join(' + ')}
                     </p>
                     {canViewSensitive && (
                       <p className="text-xs opacity-70 mt-1">

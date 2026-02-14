@@ -23,9 +23,12 @@ const timeSlots = generateTimeSlotsWithBlocked(
   30,
 );
 
+export type AgendaLocation = 'paita' | 'piura';
+
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<AgendaLocation>('piura');
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [showMyAppointments, setShowMyAppointments] = useState(false);
@@ -50,10 +53,13 @@ const Index = () => {
   const todayAppointments = appointments;
   const isAdmin = currentUser?.role === 'admin';
   const isDayClosed = Boolean(dayClosures[dateString]) || dateString < todayString;
-  const visibleAppointments =
-    showMyAppointments && currentUser
-      ? todayAppointments.filter((appointment) => appointment.createdByOperatorId === currentUser.id)
-      : todayAppointments;
+  const visibleAppointments = useMemo(() => {
+    let list = todayAppointments.filter((appointment) => appointment.city === selectedLocation);
+    if (showMyAppointments && currentUser) {
+      list = list.filter((appointment) => appointment.createdByOperatorId === currentUser.id);
+    }
+    return list;
+  }, [todayAppointments, showMyAppointments, currentUser, selectedLocation]);
 
   const operators = useMemo<Operator[]>(
     () =>
@@ -314,6 +320,30 @@ const Index = () => {
               </div>
             )}
           </div>
+          <div className="flex gap-1 mb-4">
+            <button
+              type="button"
+              onClick={() => setSelectedLocation('paita')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                selectedLocation === 'paita'
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              Paita
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedLocation('piura')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                selectedLocation === 'piura'
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              Piura
+            </button>
+          </div>
           <ScheduleGrid
             slots={slots}
             appointments={appointmentsForSchedule}
@@ -344,6 +374,7 @@ const Index = () => {
           selectedTime={selectedTime}
           selectedDate={dateString}
           operator={selectedOperator}
+          defaultLocation={selectedLocation}
         />
       )}
 

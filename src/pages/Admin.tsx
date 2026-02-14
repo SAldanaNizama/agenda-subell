@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAppointments } from '@/hooks/useAppointments';
 import { formatDate } from '@/utils/timeSlots';
+import { formatCityName } from '@/utils/display';
 import { FullPaymentDialog } from '@/components/FullPaymentDialog';
 
 const colorOptions = [
@@ -390,7 +391,7 @@ const Admin = () => {
                               {appointment.patientName} · {appointment.time}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {appointment.city} · {appointment.services.join(' + ')}
+                              {formatCityName(appointment.city)} · {appointment.services.join(' + ')}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
@@ -450,7 +451,7 @@ const Admin = () => {
                               {appointment.patientName} · {appointment.time}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {appointment.city} · {appointment.services.join(' + ')}
+                              {formatCityName(appointment.city)} · {appointment.services.join(' + ')}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
@@ -486,7 +487,7 @@ const Admin = () => {
                               {appointment.patientName} · {appointment.time}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {appointment.city} · {appointment.services.join(' + ')}
+                              {formatCityName(appointment.city)} · {appointment.services.join(' + ')}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
@@ -538,7 +539,7 @@ const Admin = () => {
                             {appointment.patientName} · {appointment.time}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {appointment.city} · {appointment.services.join(' + ')}
+                            {formatCityName(appointment.city)} · {appointment.services.join(' + ')}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Operadora: {appointment.operatorName} · Monto: {appointment.amountFinal.toFixed(2)} · Pagado:{' '}
